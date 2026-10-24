@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0B1118">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Nailcap — GPverse</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="tb-left">
+      <span id="lvl-code" class="accent">1-1</span>
+      <span id="lvl-name" class="muted"></span>
+    </div>
+    <div class="tb-mid">
+      <span>Salvati <strong id="saved">0</strong>/<span id="total">0</span> · obiettivo <span id="goal">0</span></span>
+      <span class="muted">In campo <span id="out">0</span></span>
+      <span id="timer" class="strong">0:00</span>
+    </div>
+    <button id="version-btn" class="pill" aria-label="Versione, apri il changelog"></button>
+  </header>
+
+  <main id="playfield">
+    <nav id="roles" aria-label="Ruoli">
+      <div id="role-panel">
+        <button id="roles-toggle" class="toggle" aria-expanded="false" aria-label="Mostra i nomi dei ruoli">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path id="chevron" d="M9 6 L15 12 L9 18" fill="none" stroke="#9DB0BD" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="role-list"></div>
+      </div>
+    </nav>
+
+    <div id="stage"><canvas id="game" aria-label="Campo di gioco"></canvas></div>
+
+    <aside id="controls">
+      <button id="btn-pause" class="ctrl" aria-label="Pausa">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 V19 M16 5 V19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span id="pause-label">Pausa</span>
+      </button>
+      <button id="btn-restart" class="ctrl" aria-label="Ricomincia il livello">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12 A7 7 0 1 0 8 6.3 M5 4 V9 H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Ricomincia</span>
+      </button>
+      <button id="btn-speed" class="ctrl" aria-label="Velocità 1×">
+        <b id="speed-label">1×</b>
+        <span>Velocità</span>
+      </button>
+      <button id="btn-menu" class="ctrl" aria-label="Scegli livello">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7 H19 M5 12 H19 M5 17 H19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Livelli</span>
+      </button>
+    </aside>
+  </main>
+</div>
+
+<div id="overlay" class="overlay" hidden>
+  <div class="panel" id="overlay-panel" role="dialog" aria-modal="true"></div>
+</div>
+
+<div id="rotate" class="rotate">
+  <svg width="140" height="140" viewBox="0 0 160 160" aria-hidden="true">
+    <rect x="56" y="22" width="48" height="84" rx="8" fill="none" stroke="#24323F" stroke-width="3"/>
+    <rect x="38" y="76" width="84" height="48" rx="8" fill="#121C26" stroke="#3DE8F0" stroke-width="3"/>
+    <path d="M118 40 Q140 52 136 76" fill="none" stroke="#3DE8F0" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M130 72 L136 78 L142 70" fill="none" stroke="#3DE8F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(80 114)"><rect x="-3" y="-12" width="6" height="11" rx="2" fill="#EFE8FF"/><path d="M-7 -11 Q0 -24 7 -11 Z" fill="#8A5CF6"/></g>
+  </svg>
+  <h1>Ruota il telefono</h1>
+  <p>Nailcap si gioca in orizzontale: più spazio per la folla e per i tuoi pollici.</p>
+  <span class="ver" id="rotate-ver"></span>
+</div>
+
+<script src="js/version.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

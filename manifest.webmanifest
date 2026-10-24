@@ -1,0 +1,13 @@
+{
+  "name": "Nailcap — GPverse",
+  "short_name": "Nailcap",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0B1118",
+  "theme_color": "#0B1118",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
