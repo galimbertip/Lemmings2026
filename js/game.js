@@ -20,6 +20,19 @@
   };
   const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram'];
 
+  // Ambientazione: sottobosco notturno bioluminescente (palette GPverse)
+  const THEME = {
+    sky: ['#060914', '#0F0D26', '#1A1034'],
+    far: '#161538',
+    farGlow: 'rgba(61, 232, 240, 0.10)',
+    near: '#0E0B22',
+    rock: [[40, 34, 62], [33, 28, 52], [46, 39, 72]],
+    vein: [74, 60, 118],
+    edge: [[61, 232, 240], [30, 138, 146], [44, 70, 92]],
+    under: [78, 56, 132],
+    sprout: [184, 255, 249]
+  };
+
   const LEVELS = window.NAILCAP_LEVELS;
   const VERSION = window.NAILCAP_VERSION;
 
@@ -31,6 +44,11 @@
   terrainCanvas.width = W;
   terrainCanvas.height = H;
   const tctx = terrainCanvas.getContext('2d');
+  const bgCanvas = document.createElement('canvas');
+  bgCanvas.width = W;
+  bgCanvas.height = H;
+  const bctx = bgCanvas.getContext('2d');
+  let ambient = [];
   const portraitQuery = window.matchMedia('(orientation: portrait) and (max-width: 900px)');
 
   // ---------- Stato ----------
@@ -87,6 +105,7 @@
     }
     const img = tctx.createImageData(W, H);
     const d = img.data;
+    const put = (k, c, a) => { const p = k * 4; d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = a === undefined ? 255 : a; };
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         const k = y * W + x;
@@ -94,18 +113,117 @@
         let depth = 0;
         while (depth < 4 && y - depth - 1 >= 0 && mask[(y - depth - 1) * W + x]) depth++;
         const topIsAir = y - depth - 1 < 0 || !mask[(y - depth - 1) * W + x];
+        const belowIsAir = y + 1 < H && !mask[(y + 1) * W + x];
         let c;
         if (depth < 3 && topIsAir && y > 0) {
-          c = depth === 0 ? [70, 140, 80] : [47, 107, 58];
+          c = THEME.edge[depth];
+        } else if (belowIsAir) {
+          c = THEME.under;
         } else {
-          const n = ((x * 7 + y * 13) ^ (x * y)) & 15;
-          c = n < 2 ? [74, 52, 38] : n < 4 ? [50, 36, 28] : [58, 42, 32];
+          // micelio: venature chiare che attraversano la roccia
+          const v = Math.sin(x * 0.09 + Math.sin(y * 0.07) * 2.2) + Math.sin(y * 0.13 + x * 0.031);
+          if (v > 1.72) c = THEME.vein;
+          else {
+            const n = ((x * 7 + y * 13) ^ (x * y)) & 15;
+            c = n < 2 ? THEME.rock[2] : n < 5 ? THEME.rock[1] : THEME.rock[0];
+          }
         }
-        const p = k * 4;
-        d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = 255;
+        put(k, c);
+        // germogli luminosi sulle superfici
+        if (depth === 0 && topIsAir && y > 2 && ((x * 2654435761) >>> 0) % 41 === 0) {
+          put(k - W, THEME.sprout, 200);
+          put(k - 2 * W, THEME.sprout, 120);
+        }
       }
     }
     tctx.putImageData(img, 0, 0);
+  }
+
+  // ---------- Sfondo ----------
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function buildBackground(seed) {
+    const rand = rng(seed);
+    const g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, THEME.sky[0]);
+    g.addColorStop(0.55, THEME.sky[1]);
+    g.addColorStop(1, THEME.sky[2]);
+    bctx.fillStyle = g;
+    bctx.fillRect(0, 0, W, H);
+
+    // lucciole lontane
+    for (let i = 0; i < 40; i++) {
+      bctx.fillStyle = `rgba(159, 246, 250, ${0.15 + rand() * 0.35})`;
+      bctx.fillRect(rand() * W, rand() * H * 0.7, 1, 1);
+    }
+
+    // funghi giganti sullo sfondo
+    for (let i = 0; i < 6; i++) {
+      const x = 30 + rand() * (W - 60);
+      const capR = 34 + rand() * 40;
+      const top = 40 + rand() * 90;
+      const stemW = 8 + rand() * 10;
+      const lean = (rand() - 0.5) * 30;
+      bctx.fillStyle = THEME.far;
+      bctx.beginPath();
+      bctx.moveTo(x - stemW / 2, H);
+      bctx.quadraticCurveTo(x - stemW / 2 + lean, (top + H) / 2, x - stemW / 3 + lean, top);
+      bctx.lineTo(x + stemW / 3 + lean, top);
+      bctx.quadraticCurveTo(x + stemW / 2 + lean, (top + H) / 2, x + stemW / 2, H);
+      bctx.closePath();
+      bctx.fill();
+      bctx.beginPath();
+      bctx.moveTo(x + lean - capR, top + 4);
+      bctx.quadraticCurveTo(x + lean, top - capR * 0.9, x + lean + capR, top + 4);
+      bctx.closePath();
+      bctx.fill();
+      bctx.fillStyle = THEME.farGlow;
+      for (let s = 0; s < 6; s++) {
+        const a = rand() * Math.PI;
+        bctx.beginPath();
+        bctx.arc(x + lean - Math.cos(a) * capR * 0.6, top - Math.sin(a) * capR * 0.35, 1.5 + rand() * 2.5, 0, Math.PI * 2);
+        bctx.fill();
+      }
+    }
+
+    // radici che pendono dall'alto
+    bctx.strokeStyle = THEME.near;
+    bctx.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const x = rand() * W;
+      const len = 25 + rand() * 60;
+      bctx.lineWidth = 2 + rand() * 4;
+      bctx.beginPath();
+      bctx.moveTo(x, 0);
+      bctx.bezierCurveTo(x + (rand() - 0.5) * 30, len * 0.4, x + (rand() - 0.5) * 30, len * 0.7, x + (rand() - 0.5) * 20, len);
+      bctx.stroke();
+    }
+
+    ambient = [];
+    for (let i = 0; i < 28; i++) {
+      ambient.push({ x: rand() * W, y: rand() * H, r: 0.6 + rand() * 1.1, v: 0.05 + rand() * 0.12, ph: rand() * Math.PI * 2 });
+    }
+  }
+
+  function drawAmbient(now) {
+    for (const s of ambient) {
+      const y = ((s.y - now * s.v * 0.03) % H + H) % H;
+      const x = s.x + Math.sin(now * 0.0006 + s.ph) * 6;
+      const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(now * 0.002 + s.ph));
+      ctx.fillStyle = `rgba(184, 255, 249, ${a})`;
+      ctx.beginPath();
+      ctx.arc(x, y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function carve(x0, y0, w, h) {
@@ -121,6 +239,7 @@
   function loadLevel(index) {
     const level = LEVELS[index];
     buildTerrain(level);
+    buildBackground(index * 7919 + 17);
     state = {
       index,
       level,
@@ -353,36 +472,35 @@
     ctx.closePath();
   }
 
-  function drawBackground() {
-    ctx.fillStyle = '#0B1118';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#101A24';
+  // Ingresso: un baccello di spore appeso a un gambo, i Nailcap cadono dal fondo
+  function drawEntrance(e, tick) {
+    const cx = e.x, cy = e.y - 24;
+    let top = cy - 14;
+    while (top > 0 && !solid(cx, top - 1)) top--;
+    ctx.strokeStyle = '#2E2550';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(W, 0);
-    ctx.lineTo(W, 40);
-    ctx.quadraticCurveTo(560, 70, 480, 48);
-    ctx.quadraticCurveTo(400, 30, 330, 58);
-    ctx.quadraticCurveTo(250, 86, 180, 52);
-    ctx.quadraticCurveTo(100, 24, 0, 50);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function drawEntrance(e) {
-    ctx.fillStyle = '#4A3426';
-    roundRect(e.x - 40, e.y - 30, 50, 24, 10);
-    ctx.fill();
-    ctx.strokeStyle = '#5E4434';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(e.x - 34, e.y - 23); ctx.lineTo(e.x - 6, e.y - 23);
-    ctx.moveTo(e.x - 32, e.y - 13); ctx.lineTo(e.x - 8, e.y - 13);
+    ctx.moveTo(cx, top);
+    ctx.quadraticCurveTo(cx + 5, (top + cy) / 2, cx, cy - 12);
     ctx.stroke();
+    ctx.fillStyle = '#3A2A66';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 15, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#5A44A0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy - 8); ctx.quadraticCurveTo(cx - 12, cy, cx - 7, cy + 8);
+    ctx.moveTo(cx + 8, cy - 8); ctx.quadraticCurveTo(cx + 12, cy, cx + 7, cy + 8);
+    ctx.stroke();
+    const glow = 0.55 + 0.45 * Math.sin(tick / 20);
     ctx.fillStyle = '#06090D';
     ctx.beginPath();
-    ctx.ellipse(e.x + 2, e.y - 18, 6, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy + 11, 7, 3, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = `rgba(61, 232, 240, ${glow})`;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
   }
 
   function drawExit(x, y, tick) {
@@ -396,11 +514,17 @@
     ctx.strokeStyle = '#3DE8F0';
     ctx.lineWidth = 2;
     ctx.stroke();
+    // cerchio delle fate: funghetti luminosi attorno all'uscita
     const glow = 0.5 + 0.5 * Math.sin(tick / 15);
-    ctx.fillStyle = `rgba(184, 255, 249, ${0.5 + glow * 0.5})`;
-    for (const [dx, dy, r] of [[-19, -2, 2.2], [-22, -10, 1.5], [19, -2, 2.2], [22, -10, 1.5]]) {
+    for (const [dx, s] of [[-20, 1], [-25, 0.7], [20, 1], [25, 0.7]]) {
+      const fx = x + dx;
+      ctx.fillStyle = '#CFC6EE';
+      ctx.fillRect(fx - 0.7 * s, y - 4 * s, 1.4 * s, 4 * s);
+      ctx.fillStyle = `rgba(61, 232, 240, ${0.55 + glow * 0.45})`;
       ctx.beginPath();
-      ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+      ctx.moveTo(fx - 3 * s, y - 3.5 * s);
+      ctx.quadraticCurveTo(fx, y - 9 * s, fx + 3 * s, y - 3.5 * s);
+      ctx.closePath();
       ctx.fill();
     }
   }
@@ -462,9 +586,12 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (!state) return;
     ctx.setTransform(view.scale, 0, 0, view.scale, view.ox, view.oy);
-    drawBackground();
-    drawEntrance(state.level.entrance);
-    drawExit(state.level.exit.x, state.level.exit.y, state.tick);
+    const now = performance.now();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(bgCanvas, 0, 0);
+    drawAmbient(now);
+    drawEntrance(state.level.entrance, now / 16);
+    drawExit(state.level.exit.x, state.level.exit.y, now / 16);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(terrainCanvas, 0, 0);
     for (const c of state.caps) if (!c.dead && !c.saved) drawCap(c);

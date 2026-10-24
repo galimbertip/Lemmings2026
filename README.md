@@ -13,6 +13,12 @@ I **Nailcap** (in italiano *Chiodini*) sono piccoli funghi slanciati che marcian
 Occupano poco spazio, quindi su uno smartphone in orizzontale se ne vedono tanti e restano leggibili.
 I ruoli sono **mutazioni del fungo**: il cappello cambia forma e colore, così il ruolo si legge a colpo d'occhio.
 
+## Ambientazione
+
+Un **sottobosco notturno bioluminescente**, nei colori neon di GPverse: funghi giganti sullo sfondo,
+roccia attraversata da venature di micelio, bordi che brillano di turchese e spore che fluttuano.
+I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fate** dell'uscita.
+
 ## Ruoli
 
 | Ruolo | Effetto | Colore cappello | Stato |
