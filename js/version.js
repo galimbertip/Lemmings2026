@@ -1,7 +1,21 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.3.0';
+window.NAILCAP_VERSION = 'V.0.4.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.4.0',
+    date: '2026-10-25',
+    items: [
+      'Riavvolgi il tempo: timeline trascinabile e pulsante −5 s',
+      'Dopo un riavvolgimento le mosse registrate si rigiocano da sole; una mossa nuova cambia il futuro',
+      'Tacche colorate sulla timeline nei momenti in cui hai assegnato un ruolo',
+      'Riavvolgi 10 s anche dalla schermata di sconfitta',
+      'Nuovo ruolo Stretch: il gambo si allunga in una rampa',
+      'Nuovo ruolo Clinger: scala le pareti (tratto permanente)',
+      'Mondo 2 "Le radici alte" con 3 livelli',
+      'Selezione livelli divisa per mondo; i ruoli nuovi sono presentati all\'inizio del livello'
+    ]
+  },
   {
     version: 'V.0.3.0',
     date: '2026-10-24',

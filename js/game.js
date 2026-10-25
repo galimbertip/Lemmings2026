@@ -8,17 +8,24 @@
   const FALL_DEATH = 60;   // pixel di caduta oltre cui un Nailcap senza Parasol muore
   const STEP_UP = 4;       // gradino massimo che un Nailcap scavalca
   const TAP_RADIUS = 22;   // raggio di tocco generoso: niente click al pixel
+  const KEYFRAME_EVERY = 300;  // un'istantanea ogni 5 secondi di gioco
+  const REWIND_STEP = 300;     // il pulsante Riavvolgi torna indietro di 5 secondi
+  const STRETCH_BRICKS = 14;
   const BASE_CAP = '#8A5CF6';
   const STEM = '#EFE8FF';
+  const BRICK = [207, 198, 238];
   const STORAGE_KEY = 'gpverse.nailcap.progress.v1';
 
+  // Ruoli: "trait" = tratto permanente che si somma al ruolo (Parasol, Clinger)
   const ROLE_DEFS = {
     stump:   { name: 'Stump',   color: '#8C99A6', desc: 'Si pianta e fa girare la folla' },
     rooter:  { name: 'Rooter',  color: '#C9824A', desc: 'Scava verso il basso' },
-    parasol: { name: 'Parasol', color: '#2EC4B6', desc: 'Plana senza farsi male' },
-    ram:     { name: 'Ram',     color: '#E5484D', desc: 'Sfonda in orizzontale' }
+    parasol: { name: 'Parasol', color: '#2EC4B6', desc: 'Plana senza farsi male', trait: true },
+    ram:     { name: 'Ram',     color: '#E5484D', desc: 'Sfonda in orizzontale' },
+    stretch: { name: 'Stretch', color: '#F2B84B', desc: 'Allunga il gambo in una rampa' },
+    clinger: { name: 'Clinger', color: '#7CF29A', desc: 'Scala le pareti', trait: true }
   };
-  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram'];
+  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger'];
 
   // Ambientazione: sottobosco notturno bioluminescente (palette GPverse)
   const THEME = {
@@ -34,6 +41,7 @@
   };
 
   const LEVELS = window.NAILCAP_LEVELS;
+  const WORLDS = window.NAILCAP_WORLDS;
   const VERSION = window.NAILCAP_VERSION;
 
   // ---------- DOM ----------
@@ -48,12 +56,13 @@
   bgCanvas.width = W;
   bgCanvas.height = H;
   const bctx = bgCanvas.getContext('2d');
-  let ambient = [];
   const portraitQuery = window.matchMedia('(orientation: portrait) and (max-width: 900px)');
 
   // ---------- Stato ----------
+  // mask: 0 aria, 1 roccia, 2 gambo (costruito da Stretch)
   let mask = new Uint8Array(W * H);
   let state = null;
+  let ambient = [];
   let selectedRole = null;
   let paused = false;
   let fast = false;
@@ -82,10 +91,10 @@
     x |= 0; y |= 0;
     if (x < 0 || x >= W) return true;
     if (y < 0 || y >= H) return false;
-    return mask[y * W + x] === 1;
+    return mask[y * W + x] !== 0;
   }
 
-  function buildTerrain(level) {
+  function buildMask(level) {
     mask = new Uint8Array(W * H);
     for (const s of level.terrain) {
       if (s.r) {
@@ -103,6 +112,10 @@
         }
       }
     }
+  }
+
+  // Disegna il terreno a partire dalla mask (all'avvio e dopo ogni riavvolgimento)
+  function paintTerrain() {
     const img = tctx.createImageData(W, H);
     const d = img.data;
     const put = (k, c, a) => { const p = k * 4; d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = a === undefined ? 255 : a; };
@@ -110,6 +123,7 @@
       for (let x = 0; x < W; x++) {
         const k = y * W + x;
         if (!mask[k]) continue;
+        if (mask[k] === 2) { put(k, BRICK); continue; }
         let depth = 0;
         while (depth < 4 && y - depth - 1 >= 0 && mask[(y - depth - 1) * W + x]) depth++;
         const topIsAir = y - depth - 1 < 0 || !mask[(y - depth - 1) * W + x];
@@ -137,6 +151,25 @@
       }
     }
     tctx.putImageData(img, 0, 0);
+  }
+
+  function carve(x0, y0, w, h) {
+    x0 |= 0; y0 |= 0;
+    for (let j = y0; j < y0 + h; j++) {
+      if (j < 0 || j >= H) continue;
+      for (let i = x0; i < x0 + w; i++) if (i >= 0 && i < W) mask[j * W + i] = 0;
+    }
+    tctx.clearRect(x0, y0, w, h);
+  }
+
+  function fillBrick(x0, y, w) {
+    if (y < 0 || y >= H) return;
+    tctx.fillStyle = `rgb(${BRICK[0]}, ${BRICK[1]}, ${BRICK[2]})`;
+    for (let i = x0; i < x0 + w; i++) {
+      if (i < 0 || i >= W || mask[y * W + i]) continue;
+      mask[y * W + i] = 2;
+      tctx.fillRect(i, y, 1, 1);
+    }
   }
 
   // ---------- Sfondo ----------
@@ -226,19 +259,11 @@
     }
   }
 
-  function carve(x0, y0, w, h) {
-    x0 |= 0; y0 |= 0;
-    for (let j = y0; j < y0 + h; j++) {
-      if (j < 0 || j >= H) continue;
-      for (let i = x0; i < x0 + w; i++) if (i >= 0 && i < W) mask[j * W + i] = 0;
-    }
-    tctx.clearRect(x0, y0, w, h);
-  }
-
   // ---------- Livello ----------
   function loadLevel(index) {
     const level = LEVELS[index];
-    buildTerrain(level);
+    buildMask(level);
+    paintTerrain();
     buildBackground(index * 7919 + 17);
     state = {
       index,
@@ -251,8 +276,15 @@
       tick: 0,
       nextSpawn: 30,
       started: false,
-      over: false
+      over: false,
+      silent: false,
+      // riavvolgimento: log delle azioni + istantanee periodiche
+      log: [],
+      ai: 0,
+      keyframes: [],
+      maxTick: 0
     };
+    saveKeyframe();
     progress.last = index;
     saveProgress();
     selectedRole = ROLE_ORDER.find((r) => level.roles[r] > 0) || null;
@@ -262,14 +294,64 @@
     $('lvl-name').textContent = level.name;
     $('total').textContent = level.total;
     $('goal').textContent = level.goal;
+    timelineDirty = true;
     renderRoles();
     showIntro();
+  }
+
+  // ---------- Riavvolgimento ----------
+  // La simulazione è deterministica: stesso livello + stesse azioni = stessa partita.
+  // Per tornare a un istante si riparte dall'istantanea precedente e si risimula.
+  function saveKeyframe() {
+    const s = state;
+    if (s.keyframes.some((k) => k.tick === s.tick)) return;
+    s.keyframes.push({
+      tick: s.tick,
+      mask: mask.slice(),
+      caps: s.caps.map((c) => Object.assign({}, c)),
+      roles: Object.assign({}, s.roles),
+      released: s.released,
+      saved: s.saved,
+      nextSpawn: s.nextSpawn
+    });
+  }
+
+  function seek(target) {
+    const s = state;
+    target = Math.max(0, Math.min(Math.round(target), s.maxTick));
+    let kf = s.keyframes[0];
+    for (const k of s.keyframes) if (k.tick <= target && k.tick >= kf.tick) kf = k;
+    mask = kf.mask.slice();
+    paintTerrain();
+    s.caps = kf.caps.map((c) => Object.assign({}, c));
+    s.roles = Object.assign({}, kf.roles);
+    s.released = kf.released;
+    s.saved = kf.saved;
+    s.nextSpawn = kf.nextSpawn;
+    s.tick = kf.tick;
+    s.over = false;
+    s.particles = [];
+    s.ai = 0;
+    while (s.ai < s.log.length && s.log[s.ai].tick < s.tick) s.ai++;
+    s.silent = true;
+    while (s.tick < target && !s.over) step();
+    s.silent = false;
+    renderRoles();
+    if (s.over) showResult(s.saved >= s.level.goal);
+    else closeOverlay();
+  }
+
+  function rewindBy(ticks) {
+    if (!state || !state.started) return;
+    paused = true;
+    updatePauseUi();
+    seek(state.tick - ticks);
   }
 
   // ---------- Nailcap ----------
   function spawn() {
     const e = state.level.entrance;
-    state.caps.push({ x: e.x, y: e.y, dir: 1, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false });
+    state.caps.push({ x: e.x, y: e.y, dir: 1, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, bricks: 0 });
     state.released++;
   }
 
@@ -326,11 +408,35 @@
         const nx = c.x + c.dir;
         let up = 0;
         while (up <= STEP_UP && solid(nx, c.y - up)) up++;
-        if (up > STEP_UP) { c.dir *= -1; return; }
+        if (up > STEP_UP) {
+          if (c.clinger) { c.mode = 'climb'; c.t = 0; }
+          else c.dir *= -1;
+          return;
+        }
         c.x = nx;
         c.y -= up;
         let down = 0;
         while (down < 3 && !solid(c.x, c.y + 1)) { c.y++; down++; }
+        return;
+      }
+
+      case 'climb': {
+        if (c.t % 2 !== 0) return;
+        if (!solid(c.x + c.dir, c.y)) {
+          // in cima: sale sul bordo e riprende a camminare
+          c.x += c.dir;
+          c.mode = 'walk';
+          c.sub = 0;
+          return;
+        }
+        if (c.y <= 12 || solid(c.x, c.y - 12)) {
+          // sbatte contro un soffitto: si stacca e cade all'indietro
+          c.dir *= -1;
+          c.x += c.dir;
+          startFall(c);
+          return;
+        }
+        c.y -= 1;
         return;
       }
 
@@ -367,11 +473,28 @@
         if (nx > 0 && nx < W - 1) c.x = nx; else c.mode = 'walk';
         return;
       }
+
+      case 'stretch': {
+        // il gambo si allunga in una rampa: un mattone ogni 5 tick, 3 px avanti e 1 su
+        if (!solid(c.x, c.y + 1)) { startFall(c); return; }
+        if (c.t % 5 !== 0) return;
+        if (solid(c.x + c.dir * 3, c.y - 2) || solid(c.x + c.dir * 3, c.y - 8)) {
+          c.dir *= -1;
+          c.mode = 'walk';
+          return;
+        }
+        fillBrick(c.dir > 0 ? c.x : c.x - 5, c.y, 6);
+        c.y -= 1;
+        c.x += 3 * c.dir;
+        if (--c.bricks <= 0) c.mode = 'walk';
+        return;
+      }
     }
   }
 
-  // ---------- Particelle ----------
+  // ---------- Particelle (solo estetiche, fuori dalla simulazione) ----------
   function burst(x, y, color, n) {
+    if (state.silent) return;
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = 0.4 + Math.random() * 1.2;
@@ -379,6 +502,7 @@
     }
   }
   function dust(x, y, color) {
+    if (state.silent) return;
     for (let i = 0; i < 3; i++) {
       state.particles.push({ x, y, vx: (Math.random() - 0.5) * 0.8, vy: -Math.random() * 0.8, life: 20, color });
     }
@@ -393,16 +517,49 @@
   }
 
   // ---------- Simulazione ----------
+  function canAssign(c, role) {
+    if (role === 'parasol') return !c.parasol;
+    if (role === 'clinger') return !c.clinger;
+    return c.mode === 'walk';
+  }
+
+  function applyRole(c, role) {
+    if (!c || c.dead || c.saved || !canAssign(c, role) || (state.roles[role] || 0) <= 0) return false;
+    if (role === 'parasol') c.parasol = true;
+    else if (role === 'clinger') c.clinger = true;
+    else {
+      c.mode = role;
+      c.t = 0;
+      c.sub = 0;
+      if (role === 'stretch') c.bricks = STRETCH_BRICKS;
+    }
+    state.roles[role]--;
+    burst(c.x, c.y - 10, ROLE_DEFS[role].color, 6);
+    return true;
+  }
+
   function step() {
     const s = state;
+    // azioni registrate per questo istante (rigiocate dopo un riavvolgimento)
+    let changed = false;
+    while (s.ai < s.log.length && s.log[s.ai].tick === s.tick) {
+      const a = s.log[s.ai++];
+      applyRole(s.caps[a.cap], a.role);
+      changed = true;
+    }
+    if (changed && !s.silent) renderRoles();
+
     s.tick++;
     if (s.released < s.level.total && s.tick >= s.nextSpawn) {
       spawn();
       s.nextSpawn = s.tick + s.level.rate;
     }
     for (const c of s.caps) if (!c.dead && !c.saved) updateCap(c);
-    updateParticles();
+    if (!s.silent) updateParticles();
     if (tapFx && --tapFx.t <= 0) tapFx = null;
+
+    if (s.tick % KEYFRAME_EVERY === 0) saveKeyframe();
+    if (s.tick > s.maxTick) s.maxTick = s.tick;
 
     const alive = s.caps.some((c) => !c.dead && !c.saved);
     const timeLeft = s.level.time * 60 - s.tick;
@@ -411,6 +568,7 @@
 
   function finish() {
     state.over = true;
+    if (state.silent) return;
     const ok = state.saved >= state.level.goal;
     if (ok) {
       progress.done[state.level.code] = true;
@@ -419,12 +577,20 @@
     showResult(ok);
   }
 
-  // ---------- Input ----------
-  function canAssign(c, role) {
-    if (role === 'parasol') return !c.parasol;
-    return c.mode === 'walk';
+  // Nuova azione: da qui in poi la storia cambia, il "futuro" registrato si scarta
+  function commitAction(capIndex, role) {
+    const s = state;
+    if (!applyRole(s.caps[capIndex], role)) return false;
+    s.log.length = s.ai;
+    s.log.push({ tick: s.tick, cap: capIndex, role });
+    s.ai = s.log.length;
+    s.keyframes = s.keyframes.filter((k) => k.tick <= s.tick);
+    s.maxTick = s.tick;
+    timelineDirty = true;
+    return true;
   }
 
+  // ---------- Input ----------
   function onPointer(e) {
     if (!state || !state.started || state.over) return;
     const r = canvas.getBoundingClientRect();
@@ -432,20 +598,16 @@
     const wy = ((e.clientY - r.top) * view.dpr - view.oy) / view.scale;
     tapFx = { x: wx, y: wy, t: 18 };
     if (!selectedRole || (state.roles[selectedRole] || 0) <= 0) return;
-    let best = null;
+    let best = -1;
     let bestD = TAP_RADIUS * TAP_RADIUS;
-    for (const c of state.caps) {
-      if (c.dead || c.saved || !canAssign(c, selectedRole)) continue;
+    state.caps.forEach((c, i) => {
+      if (c.dead || c.saved || !canAssign(c, selectedRole)) return;
       const dx = c.x - wx, dy = c.y - 6 - wy;
       const d = dx * dx + dy * dy;
-      if (d < bestD) { bestD = d; best = c; }
-    }
-    if (!best) return;
-    if (selectedRole === 'parasol') best.parasol = true;
-    else { best.mode = selectedRole; best.t = 0; best.sub = 0; }
-    state.roles[selectedRole]--;
-    burst(best.x, best.y - 10, ROLE_DEFS[selectedRole].color, 6);
-    renderRoles();
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best < 0) return;
+    if (commitAction(best, selectedRole)) renderRoles();
   }
   canvas.addEventListener('pointerdown', onPointer);
 
@@ -534,6 +696,7 @@
     const gliding = c.parasol && c.mode === 'fall' && c.fall > 12;
     let capColor = BASE_CAP;
     if (ROLE_DEFS[c.mode]) capColor = ROLE_DEFS[c.mode].color;
+    else if (c.mode === 'climb') capColor = ROLE_DEFS.clinger.color;
     else if (gliding) capColor = ROLE_DEFS.parasol.color;
 
     if (c.mode === 'stump') {
@@ -554,6 +717,13 @@
     ctx.fillStyle = STEM;
     roundRect(x - 2, y - 8, 4, 8, 1.5);
     ctx.fill();
+
+    // radici-ventosa del Clinger
+    if (c.clinger) {
+      ctx.fillStyle = ROLE_DEFS.clinger.color;
+      ctx.fillRect(x - 2.6, y - 1, 1.6, 1.2);
+      ctx.fillRect(x + 1, y - 1, 1.6, 1.2);
+    }
 
     ctx.fillStyle = capColor;
     ctx.beginPath();
@@ -611,16 +781,21 @@
       ctx.setLineDash([]);
     }
     if (paused && state.started && !state.over) {
-      ctx.fillStyle = 'rgba(11, 17, 24, 0.55)';
+      ctx.fillStyle = 'rgba(11, 17, 24, 0.35)';
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#E6F1F5';
-      ctx.font = '600 18px "Exo 2", sans-serif';
+      ctx.font = '600 13px "Exo 2", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('In pausa', W / 2, H / 2);
+      ctx.fillText('In pausa · assegna i ruoli o trascina la timeline', W / 2, 22);
     }
   }
 
   // ---------- Interfaccia ----------
+  const fmt = (ticks) => {
+    const sec = Math.max(0, Math.floor(ticks / 60));
+    return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  };
+
   let hud = {};
   function setText(id, value) {
     if (hud[id] === value) return;
@@ -630,11 +805,59 @@
   function updateHud() {
     if (!state) return;
     const out = state.caps.filter((c) => !c.dead && !c.saved).length;
-    const left = Math.max(0, Math.ceil((state.level.time * 60 - state.tick) / 60));
     setText('saved', String(state.saved));
     setText('out', String(out));
-    setText('timer', Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'));
+    setText('timer', fmt(state.level.time * 60 - state.tick + 59));
+    updateTimeline();
   }
+
+  // Timeline: scala che cresce a blocchi di 15 s, così i segni non scivolano
+  let timelineDirty = true;
+  let timelineScale = 0;
+  function updateTimeline() {
+    const s = state;
+    const scale = Math.max(1800, Math.ceil(s.maxTick / 900) * 900);
+    const scrub = $('scrub');
+    if (scale !== timelineScale || timelineDirty) {
+      timelineScale = scale;
+      timelineDirty = false;
+      scrub.max = String(scale);
+      const marks = $('tl-marks');
+      marks.innerHTML = '';
+      const seen = new Set();
+      for (const a of s.log) {
+        if (seen.has(a.tick)) continue;
+        seen.add(a.tick);
+        const m = document.createElement('span');
+        m.className = 'mark';
+        m.style.left = (a.tick / scale * 100) + '%';
+        m.style.background = ROLE_DEFS[a.role].color;
+        marks.appendChild(m);
+      }
+    }
+    if (!scrubbing) scrub.value = String(s.tick);
+    const track = $('tl-track');
+    track.style.setProperty('--p', (s.tick / scale * 100) + '%');
+    track.style.setProperty('--q', (s.maxTick / scale * 100) + '%');
+    setText('tl-time', fmt(s.tick));
+  }
+
+  let scrubbing = false;
+  $('scrub').addEventListener('pointerdown', () => {
+    if (!state || !state.started) return;
+    scrubbing = true;
+    paused = true;
+    updatePauseUi();
+  });
+  window.addEventListener('pointerup', () => { scrubbing = false; });
+  $('scrub').addEventListener('input', (e) => {
+    if (!state || !state.started) { e.target.value = '0'; return; }
+    paused = true;
+    updatePauseUi();
+    const v = Number(e.target.value);
+    if (v > state.maxTick) e.target.value = String(state.maxTick);
+    seek(Math.min(v, state.maxTick));
+  });
 
   function roleIcon(color) {
     return '<svg width="24" height="20" viewBox="0 0 28 24" aria-hidden="true">' +
@@ -682,6 +905,7 @@
     paused = !paused;
     updatePauseUi();
   });
+  $('btn-rewind').addEventListener('click', () => rewindBy(REWIND_STEP));
   $('btn-restart').addEventListener('click', () => { if (state) loadLevel(state.index); });
   $('btn-speed').addEventListener('click', () => {
     fast = !fast;
@@ -710,10 +934,20 @@
     ).join('') + '</div>';
   }
 
+  function backToGame() {
+    if (state && !state.started) showIntro();
+    else if (state && state.over) showResult(state.saved >= state.level.goal);
+    else closeOverlay();
+  }
+
   function showIntro() {
     const l = state.level;
+    const fresh = (l.newRoles || []).map((r) =>
+      '<p><strong style="color:' + ROLE_DEFS[r].color + '">Nuovo: ' + ROLE_DEFS[r].name + '</strong> · ' + esc(ROLE_DEFS[r].desc) + '</p>'
+    ).join('');
     openOverlay(
       '<h2>' + esc(l.code + ' · ' + l.name) + '</h2>' +
+      fresh +
       '<p>' + esc(l.hint) + '</p>' +
       rolesChips(l) +
       '<p>Salva almeno <strong>' + l.goal + '</strong> Nailcap su ' + l.total + '.</p>' +
@@ -729,33 +963,42 @@
     openOverlay(
       '<h2>' + (ok ? 'Livello superato!' : 'Non ce l\'hanno fatta') + '</h2>' +
       '<p>Salvati <strong>' + state.saved + '</strong> su ' + l.total + ' (obiettivo ' + l.goal + ').</p>' +
+      (ok ? '' : '<p>Riavvolgi il tempo e cambia solo la mossa sbagliata.</p>') +
       '<div class="row">' +
       (ok && hasNext ? '<button class="btn primary" id="ov-next">Prossimo livello</button>' : '') +
-      '<button class="btn' + (ok ? '' : ' primary') + '" id="ov-retry">Riprova</button>' +
+      '<button class="btn' + (ok ? '' : ' primary') + '" id="ov-rewind">Riavvolgi 10 s</button>' +
+      '<button class="btn" id="ov-retry">Ricomincia</button>' +
       '<button class="btn" id="ov-levels">Livelli</button></div>'
     );
     bind('ov-next', () => loadLevel(state.index + 1));
+    bind('ov-rewind', () => rewindBy(600));
     bind('ov-retry', () => loadLevel(state.index));
     bind('ov-levels', showLevels);
   }
 
   function showLevels() {
-    const items = LEVELS.map((l, i) => {
-      const unlocked = isUnlocked(i);
-      const done = !!progress.done[l.code];
-      return '<button class="level' + (done ? ' done' : '') + '" data-i="' + i + '"' + (unlocked ? '' : ' disabled') + '>' +
-        '<strong>' + esc(l.code) + '</strong> ' + esc(l.name) +
-        '<small>' + (done ? 'Completato' : unlocked ? 'Da giocare' : 'Bloccato') + '</small></button>';
-    }).join('');
+    let html = '';
+    for (const w of WORLDS) {
+      const items = LEVELS.map((l, i) => ({ l, i })).filter((o) => o.l.world === w.id).map(({ l, i }) => {
+        const unlocked = isUnlocked(i);
+        const done = !!progress.done[l.code];
+        return '<button class="level' + (done ? ' done' : '') + '" data-i="' + i + '"' + (unlocked ? '' : ' disabled') + '>' +
+          '<strong>' + esc(l.code) + '</strong> ' + esc(l.name) +
+          '<small>' + (done ? 'Completato' : unlocked ? 'Da giocare' : 'Bloccato') + '</small></button>';
+      }).join('');
+      html += '<h3 class="world">Mondo ' + w.id + ' · ' + esc(w.name) + '</h3><div class="levels">' + items + '</div>';
+    }
     openOverlay(
-      '<h2>Mondo 1 · Il sottobosco</h2>' +
-      '<div class="levels">' + items + '</div>' +
-      '<div class="row">' + (state ? '<button class="btn" id="ov-close">Torna al livello</button>' : '') + '</div>'
+      '<h2>Livelli</h2>' + html +
+      '<div class="row">' +
+      (state ? '<button class="btn" id="ov-close">Torna al livello</button><button class="btn" id="ov-restart">Ricomincia livello</button>' : '') +
+      '</div>'
     );
     panel.querySelectorAll('.level').forEach((b) => {
       b.addEventListener('click', () => loadLevel(Number(b.dataset.i)));
     });
-    bind('ov-close', () => { if (state && !state.started) showIntro(); else if (state && state.over) showResult(state.saved >= state.level.goal); else closeOverlay(); });
+    bind('ov-close', backToGame);
+    bind('ov-restart', () => loadLevel(state.index));
   }
 
   function showChangelog() {
@@ -763,14 +1006,9 @@
       '<h3>' + esc(v.version) + ' <small>' + esc(v.date) + '</small></h3><ul>' +
       v.items.map((it) => '<li>' + esc(it) + '</li>').join('') + '</ul>'
     ).join('');
-    const wasOpen = !overlay.hidden ? panel.innerHTML : null;
     openOverlay('<h2>Nailcap ' + esc(VERSION) + '</h2><div class="changelog">' + html + '</div>' +
       '<div class="row"><button class="btn primary" id="ov-close">Chiudi</button></div>');
-    bind('ov-close', () => {
-      if (wasOpen && state && !state.started) showIntro();
-      else if (state && state.over) showResult(state.saved >= state.level.goal);
-      else closeOverlay();
-    });
+    bind('ov-close', backToGame);
   }
   $('version-btn').textContent = VERSION;
   $('rotate-ver').textContent = VERSION;
@@ -804,5 +1042,9 @@
   requestAnimationFrame(frame);
 
   // Esposto per i test automatici
-  window.__nailcap = { get state() { return state; }, step, loadLevel, solid };
+  window.__nailcap = {
+    get state() { return state; },
+    step, loadLevel, solid, seek, commitAction,
+    get mask() { return mask; }
+  };
 })();

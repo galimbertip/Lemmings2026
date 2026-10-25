@@ -27,8 +27,8 @@ I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fa
 | Rooter | Scava verso il basso | marrone | ✅ |
 | Parasol | Plana senza farsi male (tratto permanente) | turchese | ✅ |
 | Ram | Sfonda in orizzontale | rosso | ✅ |
-| Stretch | Il gambo diventa una rampa | — | in arrivo |
-| Clinger | Scala le pareti (tratto permanente) | — | in arrivo |
+| Stretch | Il gambo diventa una rampa | ambra | ✅ |
+| Clinger | Scala le pareti (tratto permanente) | verde | ✅ |
 | Puff | Esplode in spore che il vento trasporta | — | in arrivo |
 | Glow | Illumina le zone buie | — | in arrivo |
 | Mycelink | Collega due punti sotto terra (avanzato) | — | in arrivo |
@@ -38,15 +38,15 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 
 | Mondo | Ruoli nuovi |
 |---|---|
-| 1 | Stump, Rooter, Parasol, Ram (prototipo) |
-| 2 | Stretch, Clinger |
+| 1 · Il sottobosco | Stump, Rooter, Parasol, Ram (prototipo) |
+| 2 · Le radici alte | Stretch, Clinger |
 | 3 | Puff + vento |
 | 4 | Glow + livelli bui |
 | Avanzato | Mycelink, Sprout |
 
 ## Pilastri di design (roadmap)
 
-- **Riavvolgi il tempo**: timeline da scorrere avanti e indietro (simulazione deterministica).
+- ✅ **Riavvolgi il tempo**: timeline da scorrere avanti e indietro. La simulazione è deterministica: si salva il log delle mosse più un'istantanea ogni 5 s, e per tornare a un istante si risimula dall'istantanea precedente. Una mossa nuova scarta il futuro registrato.
 - **Spore e vento**: chi muore lascia spore; raffiche variabili in intensità e direzione decidono dove cadono.
 - **Terreno distruttibile** condiviso con il motore del remake di Gorilla.
 - **Progressi sincronizzati** tra dispositivi (oggi salvati solo sul dispositivo).
@@ -57,7 +57,8 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 - Orizzontale di default; in verticale compare l'avviso "ruota il telefono".
 - Ruoli in una **striscia sottile a sinistra**: tocca un cappello per scegliere il ruolo, la freccia per vedere i nomi.
 - Tocco con raggio ampio: non serve centrare il singolo pixel.
-- A destra: pausa, ricomincia, velocità 1×/2×, livelli.
+- A destra: pausa, riavvolgi 5 s, ricomincia, velocità 1×/2×, livelli.
+- In basso: la timeline, con una tacca colorata per ogni ruolo assegnato.
 
 ## Struttura
 
@@ -65,8 +66,8 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 index.html          pagina e interfaccia
 css/style.css       stile (palette GPverse)
 js/version.js       numero di versione + changelog mostrato nell'app
-js/levels.js        definizione dei livelli
-js/game.js          motore: terreno, Nailcap, ruoli, disegno, input
+js/levels.js        mondi e livelli
+js/game.js          motore: terreno, Nailcap, ruoli, riavvolgimento, disegno, input
 ```
 
 Nessuna dipendenza né build: è un sito statico servito da GitHub Pages.

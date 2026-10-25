@@ -123,7 +123,61 @@ button { font-family: inherit; color: inherit; }
 .role.empty { opacity: .4; }
 
 /* Campo */
-#stage { flex: 1; min-width: 0; position: relative; }
+#center { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#stage { flex: 1; min-height: 0; position: relative; }
+
+/* Timeline del riavvolgimento */
+#timeline {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+}
+.tl-label { font-size: 11px; color: var(--muted); flex-shrink: 0; min-width: 30px; }
+#tl-track {
+  --p: 0%;
+  --q: 0%;
+  flex: 1;
+  position: relative;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+#scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+#scrub::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) var(--p), rgba(61, 232, 240, .3) var(--p), rgba(61, 232, 240, .3) var(--q), var(--line) var(--q));
+}
+#scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 0;
+}
+#scrub::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) var(--p), rgba(61, 232, 240, .3) var(--p), rgba(61, 232, 240, .3) var(--q), var(--line) var(--q));
+}
+#scrub::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--text); border: 0; }
+#tl-marks { position: absolute; left: 9px; right: 9px; top: 0; bottom: 0; pointer-events: none; }
+.mark { position: absolute; top: 8px; width: 2px; height: 5px; margin-left: -1px; border-radius: 1px; }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
 
 /* Controlli a destra */
@@ -133,13 +187,13 @@ button { font-family: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 6px;
+  padding: 8px 0;
   border-left: 1px solid var(--line);
 }
 .ctrl {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   background: var(--panel);
   border: 2px solid var(--line-2);
@@ -233,10 +287,19 @@ button { font-family: inherit; color: inherit; }
   .rotate { display: flex; }
 }
 
+.world { margin: 14px 0 8px; font-size: 15px; color: var(--muted); font-weight: 600; }
+.world:first-of-type { margin-top: 4px; }
+
 @media (max-height: 360px) {
   #topbar { height: 30px; font-size: 12px; }
-  #controls { width: 64px; }
-  .ctrl { width: 48px; height: 48px; }
+  #controls { width: 60px; }
+  .ctrl { width: 46px; height: 46px; font-size: 10px; }
+  .ctrl b { font-size: 16px; }
+  #timeline { height: 30px; }
+}
+/* schermi molto bassi: "Ricomincia" resta nel menu Livelli */
+@media (max-height: 315px) {
+  #btn-restart { display: none; }
 }
 @media (max-width: 700px) {
   .tb-mid { gap: 10px; }

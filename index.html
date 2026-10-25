@@ -38,12 +38,26 @@
       </div>
     </nav>
 
-    <div id="stage"><canvas id="game" aria-label="Campo di gioco"></canvas></div>
+    <div id="center">
+      <div id="stage"><canvas id="game" aria-label="Campo di gioco"></canvas></div>
+      <div id="timeline">
+        <span class="tl-label">Timeline</span>
+        <div id="tl-track">
+          <input type="range" id="scrub" min="0" max="1800" value="0" step="1" aria-label="Timeline: trascina per riavvolgere il tempo">
+          <div id="tl-marks" aria-hidden="true"></div>
+        </div>
+        <span id="tl-time" class="tl-label">0:00</span>
+      </div>
+    </div>
 
     <aside id="controls">
       <button id="btn-pause" class="ctrl" aria-label="Pausa">
         <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 V19 M16 5 V19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
         <span id="pause-label">Pausa</span>
+      </button>
+      <button id="btn-rewind" class="ctrl" aria-label="Riavvolgi di 5 secondi">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6 L4 12 L11 18 Z M20 6 L13 12 L20 18 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>−5 s</span>
       </button>
       <button id="btn-restart" class="ctrl" aria-label="Ricomincia il livello">
         <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12 A7 7 0 1 0 8 6.3 M5 4 V9 H10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
