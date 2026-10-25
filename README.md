@@ -29,7 +29,7 @@ I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fa
 | Ram | Sfonda in orizzontale | rosso | ✅ |
 | Stretch | Il gambo diventa una rampa | ambra | ✅ |
 | Clinger | Scala le pareti (tratto permanente) | verde | ✅ |
-| Puff | Esplode in spore che il vento trasporta | — | in arrivo |
+| Puff | Scoppia in una spora che il vento trasporta; dove atterra rinasce | rosa | ✅ |
 | Glow | Illumina le zone buie | — | in arrivo |
 | Mycelink | Collega due punti sotto terra (avanzato) | — | in arrivo |
 | Sprout | Diventa una piattaforma (avanzato) | — | in arrivo |
@@ -40,14 +40,14 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 |---|---|
 | 1 · Il sottobosco | Stump, Rooter, Parasol, Ram (prototipo) |
 | 2 · Le radici alte | Stretch, Clinger |
-| 3 | Puff + vento |
+| 3 · La valle del vento | Puff + vento |
 | 4 | Glow + livelli bui |
 | Avanzato | Mycelink, Sprout |
 
 ## Pilastri di design (roadmap)
 
 - ✅ **Riavvolgi il tempo**: timeline da scorrere avanti e indietro. La simulazione è deterministica: si salva il log delle mosse più un'istantanea ogni 5 s, e per tornare a un istante si risimula dall'istantanea precedente. Una mossa nuova scarta il futuro registrato.
-- **Spore e vento**: chi muore lascia spore; raffiche variabili in intensità e direzione decidono dove cadono.
+- ✅ **Spore e vento**: Puff scoppia in una spora, il vento la porta e dove atterra germoglia un nuovo Nailcap. Le raffiche sono un'onda triangolare senza numeri casuali, così la simulazione resta deterministica. Anche il Parasol aperto deriva col vento.
 - **Terreno distruttibile** condiviso con il motore del remake di Gorilla.
 - **Progressi sincronizzati** tra dispositivi (oggi salvati solo sul dispositivo).
 - **Replay condivisibili, editor di livelli, livello del giorno, modalità versus.**

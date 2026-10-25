@@ -4,7 +4,8 @@
 // newRoles: ruoli presentati per la prima volta in quel livello
 window.NAILCAP_WORLDS = [
   { id: 1, name: 'Il sottobosco' },
-  { id: 2, name: 'Le radici alte' }
+  { id: 2, name: 'Le radici alte' },
+  { id: 3, name: 'La valle del vento' }
 ];
 
 window.NAILCAP_LEVELS = [
@@ -119,6 +120,61 @@ window.NAILCAP_LEVELS = [
       { r: [0, 200, 210, 80] },
       { r: [230, 196, 180, 84] },
       { r: [410, 120, 230, 160] }
+    ]
+  },
+  {
+    world: 3,
+    code: '3-1',
+    name: 'Raffica',
+    newRoles: ['puff'],
+    hint: 'Il fosso è troppo largo. Puff scoppia in una spora: il vento la porta dall\'altra parte e lì rinasce un Nailcap.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 120 },
+    exit: { x: 590, y: 180 },
+    wind: { base: 0.75 },
+    roles: { puff: 10 },
+    terrain: [
+      { r: [0, 160, 260, 120] },
+      { r: [380, 180, 260, 100] }
+    ]
+  },
+  {
+    world: 3,
+    code: '3-2',
+    name: 'Controvento',
+    hint: 'L\'uscita è alle tue spalle, oltre il fosso. Il vento soffia verso sinistra: sfruttalo.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    entrance: { x: 300, y: 150 },
+    exit: { x: 40, y: 240 },
+    wind: { base: -0.75 },
+    roles: { stump: 1, puff: 10 },
+    terrain: [
+      { r: [150, 200, 490, 80] },
+      { r: [0, 240, 90, 40] }
+    ]
+  },
+  {
+    world: 3,
+    code: '3-3',
+    name: 'Raffiche',
+    hint: 'Il vento va e viene. Guarda l\'indicatore in alto: con le raffiche deboli le spore cadono nel fosso.',
+    total: 10,
+    goal: 6,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 120 },
+    exit: { x: 600, y: 210 },
+    wind: { base: 0.35, gust: 0.6, period: 720 },
+    roles: { stump: 1, puff: 10 },
+    terrain: [
+      { r: [0, 170, 240, 110] },
+      { r: [360, 210, 280, 70] }
     ]
   }
 ];

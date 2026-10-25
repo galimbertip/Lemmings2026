@@ -52,6 +52,9 @@ button { font-family: inherit; color: inherit; }
 .tb-left, .tb-mid { display: flex; align-items: center; gap: 14px; min-width: 0; }
 #lvl-name { overflow: hidden; text-overflow: ellipsis; }
 .accent { color: var(--accent); font-weight: 700; }
+.wind { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-soft); font-weight: 600; }
+.wind[hidden] { display: none; }
+#wind-arrow { transition: transform .2s ease; }
 .muted { color: var(--muted); }
 .strong { font-weight: 600; }
 .pill {

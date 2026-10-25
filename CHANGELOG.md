@@ -2,6 +2,14 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.5.0 — 2026-10-25
+- Vento a raffiche: cambia forza e direzione, indicatore in alto e raffiche visibili sullo sfondo
+- Nuovo ruolo Puff: scoppia in una spora che il vento trasporta; dove atterra germoglia un nuovo Nailcap
+- Lo scoppio di Puff rompe pareti e soffitti vicini, mai il terreno sotto i piedi
+- Il Parasol aperto si fa portare dal vento
+- Mondo 3 "La valle del vento" con 3 livelli: Raffica, Controvento, Raffiche
+- Vento e spore sono deterministici: il riavvolgimento ripete la partita identica
+
 ## V.0.4.0 — 2026-10-25
 - Riavvolgi il tempo: timeline trascinabile e pulsante −5 s
 - Dopo un riavvolgimento le mosse registrate si rigiocano da sole; una mossa nuova cambia il futuro

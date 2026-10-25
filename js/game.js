@@ -11,6 +11,10 @@
   const KEYFRAME_EVERY = 300;  // un'istantanea ogni 5 secondi di gioco
   const REWIND_STEP = 300;     // il pulsante Riavvolgi torna indietro di 5 secondi
   const STRETCH_BRICKS = 14;
+  const PUFF_FUSE = 60;        // 1 s di rigonfiamento prima dello scoppio
+  const PUFF_RADIUS = 7;       // cratere piccolo: non intrappola chi passa dopo
+  const GERMINATE = 120;       // 2 s perché una spora atterrata diventi un Nailcap
+  const SPORE_COLOR = '#FF7AC6';
   const BASE_CAP = '#8A5CF6';
   const STEM = '#EFE8FF';
   const BRICK = [207, 198, 238];
@@ -23,9 +27,10 @@
     parasol: { name: 'Parasol', color: '#2EC4B6', desc: 'Plana senza farsi male', trait: true },
     ram:     { name: 'Ram',     color: '#E5484D', desc: 'Sfonda in orizzontale' },
     stretch: { name: 'Stretch', color: '#F2B84B', desc: 'Allunga il gambo in una rampa' },
-    clinger: { name: 'Clinger', color: '#7CF29A', desc: 'Scala le pareti', trait: true }
+    clinger: { name: 'Clinger', color: '#7CF29A', desc: 'Scala le pareti', trait: true },
+    puff:    { name: 'Puff',    color: SPORE_COLOR, desc: 'Scoppia in una spora che il vento trasporta: dove atterra rinasce' }
   };
-  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger'];
+  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger', 'puff'];
 
   // Ambientazione: sottobosco notturno bioluminescente (palette GPverse)
   const THEME = {
@@ -259,6 +264,19 @@
     }
   }
 
+  // ---------- Vento ----------
+  // Raffiche a onda triangolare: niente Math.sin né numeri casuali nella simulazione,
+  // così la stessa partita si ripete identica (riavvolgimento, replay futuri).
+  // Valore in pixel per tick: positivo verso destra.
+  function windAt(level, tick) {
+    const w = level.wind;
+    if (!w) return 0;
+    if (!w.gust) return w.base;
+    const u = (((tick + (w.phase || 0)) % w.period) + w.period) % w.period / w.period;
+    const tri = 1 - 4 * Math.abs(u - 0.5);
+    return w.base + w.gust * tri;
+  }
+
   // ---------- Livello ----------
   function loadLevel(index) {
     const level = LEVELS[index];
@@ -269,6 +287,7 @@
       index,
       level,
       caps: [],
+      spores: [],
       particles: [],
       roles: Object.assign({}, level.roles),
       released: 0,
@@ -309,6 +328,7 @@
       tick: s.tick,
       mask: mask.slice(),
       caps: s.caps.map((c) => Object.assign({}, c)),
+      spores: s.spores.map((p) => Object.assign({}, p)),
       roles: Object.assign({}, s.roles),
       released: s.released,
       saved: s.saved,
@@ -324,6 +344,7 @@
     mask = kf.mask.slice();
     paintTerrain();
     s.caps = kf.caps.map((c) => Object.assign({}, c));
+    s.spores = kf.spores.map((p) => Object.assign({}, p));
     s.roles = Object.assign({}, kf.roles);
     s.released = kf.released;
     s.saved = kf.saved;
@@ -349,10 +370,56 @@
   }
 
   // ---------- Nailcap ----------
+  function newCap(x, y, dir) {
+    return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, bricks: 0, wx: 0 };
+  }
+
   function spawn() {
     const e = state.level.entrance;
-    state.caps.push({ x: e.x, y: e.y, dir: 1, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, bricks: 0 });
+    state.caps.push(newCap(e.x, e.y, 1));
     state.released++;
+  }
+
+  // ---------- Spore ----------
+  function puffExplode(c) {
+    // lo scoppio rompe pareti e soffitti attorno al corpo, mai il terreno sotto i piedi
+    carve(c.x - PUFF_RADIUS, c.y - 6 - PUFF_RADIUS, PUFF_RADIUS * 2 + 1, PUFF_RADIUS + 7);
+    c.dead = true;
+    state.spores.push({ x: c.x, y: c.y - 8, vx: 0, vy: -1.1, root: 0, dir: c.dir });
+    burst(c.x, c.y - 6, SPORE_COLOR, 18);
+  }
+
+  function updateSpores() {
+    const s = state;
+    const w = windAt(s.level, s.tick);
+    for (let i = s.spores.length - 1; i >= 0; i--) {
+      const p = s.spores[i];
+      if (p.root > 0) {
+        // atterrata: germoglia e diventa un nuovo Nailcap
+        if (++p.root >= GERMINATE) {
+          s.caps.push(newCap(Math.round(p.x), Math.round(p.y), p.dir));
+          s.spores.splice(i, 1);
+          burst(p.x, p.y - 6, '#9FF6FA', 8);
+        }
+        continue;
+      }
+      p.vx += (w - p.vx) * 0.05;
+      p.vy = Math.min(p.vy + 0.02, 0.35);
+      const nx = p.x + p.vx;
+      if (solid(Math.round(nx), Math.round(p.y))) p.vx = 0;
+      else p.x = nx;
+      const ny = p.y + p.vy;
+      if (p.vy > 0 && solid(Math.round(p.x), Math.round(ny) + 1)) {
+        p.y = Math.round(ny);
+        while (solid(Math.round(p.x), p.y)) p.y--;
+        p.root = 1;
+        if (Math.abs(w) > 0.05) p.dir = w > 0 ? 1 : -1;
+        continue;
+      }
+      if (p.vy < 0 && solid(Math.round(p.x), Math.round(ny) - 1)) p.vy = 0;
+      else p.y = ny;
+      if (p.x < -8 || p.x > W + 8 || p.y > H + 8) s.spores.splice(i, 1);
+    }
   }
 
   function startFall(c) { c.mode = 'fall'; c.fall = 0; c.sub = 0; }
@@ -385,15 +452,25 @@
       case 'fall': {
         if (solid(c.x, c.y + 1)) {
           if (c.fall > FALL_DEATH && !c.parasol) { die(c); return; }
-          c.mode = 'walk'; c.fall = 0; c.sub = 0;
+          c.mode = 'walk'; c.fall = 0; c.sub = 0; c.wx = 0;
           return;
         }
-        c.sub += c.parasol && c.fall > 12 ? 0.55 : 1.6;
+        const gliding = c.parasol && c.fall > 12;
+        c.sub += gliding ? 0.55 : 1.6;
         while (c.sub >= 1) {
           c.sub -= 1;
           if (solid(c.x, c.y + 1)) break;
           c.y += 1;
           c.fall += 1;
+        }
+        // il Parasol aperto si fa portare dal vento
+        if (gliding) {
+          c.wx += windAt(state.level, state.tick) * 0.5;
+          while (Math.abs(c.wx) >= 1) {
+            const sx = c.wx > 0 ? 1 : -1;
+            c.wx -= sx;
+            if (!solid(c.x + sx, c.y) && !solid(c.x + sx, c.y - 6)) c.x += sx;
+          }
         }
         if (c.y > H + 12) die(c, true);
         return;
@@ -474,6 +551,12 @@
         return;
       }
 
+      case 'puff': {
+        if (!solid(c.x, c.y + 1)) { c.y++; }
+        if (c.t >= PUFF_FUSE) puffExplode(c);
+        return;
+      }
+
       case 'stretch': {
         // il gambo si allunga in una rampa: un mattone ogni 5 tick, 3 px avanti e 1 su
         if (!solid(c.x, c.y + 1)) { startFall(c); return; }
@@ -518,6 +601,7 @@
 
   // ---------- Simulazione ----------
   function canAssign(c, role) {
+    if (c.mode === 'puff') return false;
     if (role === 'parasol') return !c.parasol;
     if (role === 'clinger') return !c.clinger;
     return c.mode === 'walk';
@@ -555,13 +639,14 @@
       s.nextSpawn = s.tick + s.level.rate;
     }
     for (const c of s.caps) if (!c.dead && !c.saved) updateCap(c);
+    updateSpores();
     if (!s.silent) updateParticles();
     if (tapFx && --tapFx.t <= 0) tapFx = null;
 
     if (s.tick % KEYFRAME_EVERY === 0) saveKeyframe();
     if (s.tick > s.maxTick) s.maxTick = s.tick;
 
-    const alive = s.caps.some((c) => !c.dead && !c.saved);
+    const alive = s.spores.length > 0 || s.caps.some((c) => !c.dead && !c.saved);
     const timeLeft = s.level.time * 60 - s.tick;
     if ((s.released >= s.level.total && !alive) || timeLeft <= 0) finish();
   }
@@ -731,8 +816,10 @@
       ctx.moveTo(x - 9, y - 13);
       ctx.quadraticCurveTo(x, y - 25, x + 9, y - 13);
     } else {
-      ctx.moveTo(x - 5, y - 7);
-      ctx.quadraticCurveTo(x + (c.mode === 'ram' ? c.dir * 2 : 0), y - 18, x + 5, y - 7);
+      // il Puff si gonfia prima di scoppiare
+      const k = c.mode === 'puff' ? 1 + (c.t / PUFF_FUSE) * 0.9 + (c.t % 8 < 4 ? 0.06 : 0) : 1;
+      ctx.moveTo(x - 5 * k, y - 7);
+      ctx.quadraticCurveTo(x + (c.mode === 'ram' ? c.dir * 2 : 0), y - 7 - 11 * k, x + 5 * k, y - 7);
     }
     ctx.closePath();
     ctx.fill();
@@ -750,6 +837,58 @@
     ctx.fillRect(x + 0.6 + ox, y - 5.5, 0.9, 1.3);
   }
 
+  function drawSpore(p, now) {
+    if (p.root > 0) {
+      // germoglio che cresce fino a diventare un Nailcap
+      const g = p.root / GERMINATE;
+      const x = Math.round(p.x), y = Math.round(p.y);
+      ctx.fillStyle = STEM;
+      ctx.fillRect(x - 0.8, y + 1 - 7 * g, 1.6, 7 * g);
+      ctx.fillStyle = SPORE_COLOR;
+      ctx.beginPath();
+      ctx.arc(x, y + 1 - 7 * g, 1.5 + 2 * g, Math.PI, 0);
+      ctx.fill();
+      return;
+    }
+    const pulse = 0.6 + 0.4 * Math.sin(now / 90 + p.x);
+    ctx.fillStyle = `rgba(255, 122, 198, ${0.25 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = SPORE_COLOR;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 122, 198, 0.35)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x - p.vx * 10, p.y - p.vy * 10);
+    ctx.stroke();
+  }
+
+  // raffiche visibili: trattini che scorrono nella direzione e alla velocità del vento
+  let windOff = 0;
+  let lastDraw = 0;
+  function drawWind(w, now) {
+    const dt = Math.min(50, now - lastDraw);
+    lastDraw = now;
+    if (!state.level.wind) return;
+    if (!paused) windOff += w * dt * 0.09;
+    const a = Math.min(0.45, 0.12 + Math.abs(w) * 0.35);
+    ctx.strokeStyle = `rgba(159, 246, 250, ${a})`;
+    ctx.lineWidth = 0.8;
+    const len = 6 + Math.abs(w) * 22;
+    for (let i = 0; i < 14; i++) {
+      const y = 20 + ((i * 97) % 220);
+      const x = ((i * 173 + windOff) % (W + 60) + W + 60) % (W + 60) - 30;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - Math.sign(w || 1) * len, y);
+      ctx.stroke();
+    }
+  }
+
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#06090D';
@@ -760,11 +899,13 @@
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(bgCanvas, 0, 0);
     drawAmbient(now);
+    drawWind(windAt(state.level, state.tick), now);
     drawEntrance(state.level.entrance, now / 16);
     drawExit(state.level.exit.x, state.level.exit.y, now / 16);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(terrainCanvas, 0, 0);
     for (const c of state.caps) if (!c.dead && !c.saved) drawCap(c);
+    for (const p of state.spores) drawSpore(p, now);
     for (const p of state.particles) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 30));
       ctx.fillStyle = p.color;
@@ -804,9 +945,22 @@
   }
   function updateHud() {
     if (!state) return;
-    const out = state.caps.filter((c) => !c.dead && !c.saved).length;
+    const out = state.caps.filter((c) => !c.dead && !c.saved).length + state.spores.length;
     setText('saved', String(state.saved));
     setText('out', String(out));
+    const windEl = $('wind');
+    if (state.level.wind) {
+      const w = windAt(state.level, state.tick);
+      const force = Math.round(Math.abs(w) * 5);
+      windEl.hidden = false;
+      setText('wind-force', String(force));
+      const flip = w < 0 ? 'scaleX(-1)' : 'none';
+      if (hud.windFlip !== flip) { hud.windFlip = flip; $('wind-arrow').style.transform = flip; }
+      const label = 'Vento ' + (force === 0 ? 'calmo' : (w < 0 ? 'verso sinistra' : 'verso destra') + ', forza ' + force);
+      if (hud.windLabel !== label) { hud.windLabel = label; windEl.setAttribute('aria-label', label); }
+    } else {
+      windEl.hidden = true;
+    }
     setText('timer', fmt(state.level.time * 60 - state.tick + 59));
     updateTimeline();
   }
@@ -1045,6 +1199,7 @@
   window.__nailcap = {
     get state() { return state; },
     step, loadLevel, solid, seek, commitAction,
+    wind: (t) => windAt(state.level, t),
     get mask() { return mask; }
   };
 })();
