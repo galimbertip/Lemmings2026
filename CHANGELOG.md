@@ -2,6 +2,10 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.6.1 — 2026-10-28
+- Nel menu Livelli si vede il record di Nailcap salvati per ogni livello superato
+- Predisposta la sincronizzazione dei progressi con Firebase (si attiva con la configurazione)
+
 ## V.0.6.0 — 2026-10-28
 - Livelli al buio: si vede solo attorno ai Nailcap e alle luci; le zone già viste restano in penombra
 - Nuovo ruolo Glow: il cappello si accende e illumina il buio (tratto permanente)

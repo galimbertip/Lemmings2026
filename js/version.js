@@ -1,7 +1,15 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.6.0';
+window.NAILCAP_VERSION = 'V.0.6.1';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.6.1',
+    date: '2026-10-28',
+    items: [
+      'Nel menu Livelli si vede il record di Nailcap salvati per ogni livello superato',
+      'Predisposta la sincronizzazione dei progressi con Firebase (si attiva con la configurazione)'
+    ]
+  },
   {
     version: 'V.0.6.0',
     date: '2026-10-28',

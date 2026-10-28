@@ -69,9 +69,28 @@ css/style.css       stile (palette GPverse)
 js/version.js       numero di versione + changelog mostrato nell'app
 js/levels.js        mondi e livelli
 js/game.js          motore: terreno, Nailcap, ruoli, riavvolgimento, disegno, input
+js/firebase-config.js  configurazione Firebase (null = sincronizzazione spenta)
+js/sync.js          accesso Google e sincronizzazione dei progressi su Firestore
 ```
 
-Nessuna dipendenza né build: è un sito statico servito da GitHub Pages.
+Nessuna build: è un sito statico servito da GitHub Pages. L'unica dipendenza esterna è l'SDK Firebase, caricato solo se la sincronizzazione è configurata.
+
+## Sincronizzazione dei progressi
+
+Con l'accesso Google i progressi vengono salvati su Firestore nel documento `nailcap/{uid}`.
+L'unione tiene sempre il meglio: un livello superato su un dispositivo risulta superato ovunque, e per ogni livello vale il record più alto.
+Regole Firestore richieste:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /nailcap/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
 
 ## Versioni
 

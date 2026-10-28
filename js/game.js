@@ -88,17 +88,45 @@
   const view = { scale: 1, ox: 0, oy: 0, dpr: 1 };
 
   // ---------- Progressi ----------
+  // done: livelli superati · best: record di Nailcap salvati · last: ultimo livello aperto su questo dispositivo
   function loadProgress() {
     try {
       const p = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (p && p.done) return p;
+      if (p && p.done) return { done: p.done, best: p.best || {}, last: p.last || 0 };
     } catch (e) { /* storage non disponibile */ }
-    return { done: {}, last: 0 };
+    return { done: {}, best: {}, last: 0 };
   }
-  function saveProgress() {
+  function saveLocal() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) { /* ignora */ }
   }
+  // salva e avvisa la sincronizzazione (js/sync.js) che c'è qualcosa da caricare
+  function saveProgress() {
+    saveLocal();
+    try { window.dispatchEvent(new Event('nailcap:progress')); } catch (e) { /* ignora */ }
+  }
   let progress = loadProgress();
+
+  // Unione con i progressi di un altro dispositivo: si tiene sempre il meglio dei due
+  function mergeProgress(remote) {
+    if (!remote) return false;
+    let changed = false;
+    for (const code in remote.done || {}) {
+      if (remote.done[code] && !progress.done[code]) { progress.done[code] = true; changed = true; }
+    }
+    for (const code in remote.best || {}) {
+      const v = Number(remote.best[code]) || 0;
+      if (v > (progress.best[code] || 0)) { progress.best[code] = v; changed = true; }
+    }
+    if (changed) {
+      saveLocal();
+      if (overlayKind === 'levels') showLevels();
+    }
+    return changed;
+  }
+  window.NailcapProgress = {
+    get: () => ({ done: Object.assign({}, progress.done), best: Object.assign({}, progress.best) }),
+    merge: mergeProgress
+  };
 
   function isUnlocked(i) {
     return i === 0 || !!progress.done[LEVELS[i - 1].code];
@@ -338,6 +366,8 @@
     buildMask(level);
     paintTerrain();
     buildBackground(index * 7919 + 17);
+    progress.last = index;
+    saveLocal();
     state = {
       index,
       level,
@@ -362,8 +392,6 @@
     revealed = level.dark ? new Uint8Array(Math.ceil(W / REVEAL_CELL) * Math.ceil(H / REVEAL_CELL)) : null;
     updateLights();
     saveKeyframe();
-    progress.last = index;
-    saveProgress();
     selectedRole = ROLE_ORDER.find((r) => level.roles[r] > 0) || null;
     paused = false;
     updatePauseUi();
@@ -733,8 +761,11 @@
     state.over = true;
     if (state.silent) return;
     const ok = state.saved >= state.level.goal;
-    if (ok) {
-      progress.done[state.level.code] = true;
+    const code = state.level.code;
+    const improved = ok && (!progress.done[code] || state.saved > (progress.best[code] || 0));
+    if (improved) {
+      progress.done[code] = true;
+      progress.best[code] = Math.max(progress.best[code] || 0, state.saved);
       saveProgress();
     }
     showResult(ok);
@@ -1267,11 +1298,13 @@
   // ---------- Finestre ----------
   const overlay = $('overlay');
   const panel = $('overlay-panel');
-  function openOverlay(html) {
+  let overlayKind = null;
+  function openOverlay(html, kind) {
     panel.innerHTML = html;
     overlay.hidden = false;
+    overlayKind = kind || 'other';
   }
-  function closeOverlay() { overlay.hidden = true; }
+  function closeOverlay() { overlay.hidden = true; overlayKind = null; }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   }
@@ -1331,9 +1364,11 @@
       const items = LEVELS.map((l, i) => ({ l, i })).filter((o) => o.l.world === w.id).map(({ l, i }) => {
         const unlocked = isUnlocked(i);
         const done = !!progress.done[l.code];
+        const best = progress.best[l.code];
+        const status = done ? 'Completato' + (best ? ' · ' + best + '/' + l.total : '') : unlocked ? 'Da giocare' : 'Bloccato';
         return '<button class="level' + (done ? ' done' : '') + '" data-i="' + i + '"' + (unlocked ? '' : ' disabled') + '>' +
           '<strong>' + esc(l.code) + '</strong> ' + esc(l.name) +
-          '<small>' + (done ? 'Completato' : unlocked ? 'Da giocare' : 'Bloccato') + '</small></button>';
+          '<small>' + status + '</small></button>';
       }).join('');
       html += '<h3 class="world">Mondo ' + w.id + ' · ' + esc(w.name) + '</h3><div class="levels">' + items + '</div>';
     }
@@ -1341,13 +1376,16 @@
       '<h2>Livelli</h2>' + html +
       '<div class="row">' +
       (state ? '<button class="btn" id="ov-close">Torna al livello</button><button class="btn" id="ov-restart">Ricomincia livello</button>' : '') +
-      '</div>'
+      '</div>' +
+      '<div id="sync-slot" class="sync" hidden></div>',
+      'levels'
     );
     panel.querySelectorAll('.level').forEach((b) => {
       b.addEventListener('click', () => loadLevel(Number(b.dataset.i)));
     });
     bind('ov-close', backToGame);
     bind('ov-restart', () => loadLevel(state.index));
+    try { window.dispatchEvent(new Event('nailcap:levels-open')); } catch (e) { /* ignora */ }
   }
 
   function showChangelog() {

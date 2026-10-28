@@ -290,6 +290,11 @@ button { font-family: inherit; color: inherit; }
   .rotate { display: flex; }
 }
 
+.sync { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+.sync[hidden] { display: none; }
+.sync p { margin: 0 0 10px; }
+.sync p strong { color: var(--text); }
+.sync .sync-status { font-size: 13px; margin-top: 8px; }
 .world { margin: 14px 0 8px; font-size: 15px; color: var(--muted); font-weight: 600; }
 .world:first-of-type { margin-top: 4px; }
 
