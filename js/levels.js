@@ -2,10 +2,14 @@
 // terrain: r = rettangolo [x, y, larghezza, altezza], e = ellisse [cx, cy, rx, ry]
 // entrance/exit: coordinate dei piedi (exit.y = superficie del terreno)
 // newRoles: ruoli presentati per la prima volta in quel livello
+// wind: { base, gust, period } in px/tick · dark: livello al buio
+// shelves: mensole di luce [x, y, larghezza, altezza], solide solo se illuminate
+// bulbs: funghi-lampada { x, y } che un Glow accende per 10 s
 window.NAILCAP_WORLDS = [
   { id: 1, name: 'Il sottobosco' },
   { id: 2, name: 'Le radici alte' },
-  { id: 3, name: 'La valle del vento' }
+  { id: 3, name: 'La valle del vento' },
+  { id: 4, name: 'Le grotte buie' }
 ];
 
 window.NAILCAP_LEVELS = [
@@ -176,5 +180,69 @@ window.NAILCAP_LEVELS = [
       { r: [0, 170, 240, 110] },
       { r: [360, 210, 280, 70] }
     ]
+  },
+  {
+    world: 4,
+    code: '4-1',
+    name: 'Al buio',
+    newRoles: ['glow'],
+    hint: 'Sul fosso c\'è una mensola di luce: regge solo se un Glow è vicino. Chi segue da poco un Glow passa al sicuro.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    dark: true,
+    entrance: { x: 60, y: 150 },
+    exit: { x: 590, y: 200 },
+    roles: { glow: 5 },
+    terrain: [
+      { r: [0, 200, 280, 80] },
+      { r: [350, 200, 290, 80] },
+      { r: [0, 0, 640, 30] }
+    ],
+    shelves: [[280, 200, 70, 4]]
+  },
+  {
+    world: 4,
+    code: '4-2',
+    name: 'Lampade',
+    hint: 'Un Glow che passa accanto al fungo-lampada lo accende per 10 secondi. Hai solo due Glow: scegli bene quando.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    dark: true,
+    entrance: { x: 60, y: 150 },
+    exit: { x: 590, y: 200 },
+    roles: { glow: 2 },
+    terrain: [
+      { r: [0, 200, 280, 80] },
+      { r: [370, 200, 270, 80] },
+      { r: [0, 0, 640, 30] }
+    ],
+    shelves: [[280, 200, 90, 4]],
+    bulbs: [{ x: 250, y: 200 }]
+  },
+  {
+    world: 4,
+    code: '4-3',
+    name: 'La caverna',
+    hint: 'Nel buio c\'è un muro, poi un fosso con una lampada. Apri la strada prima di accendere la luce.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    dark: true,
+    entrance: { x: 60, y: 120 },
+    exit: { x: 600, y: 160 },
+    roles: { ram: 2, glow: 2 },
+    terrain: [
+      { r: [0, 160, 330, 120] },
+      { r: [200, 70, 24, 90] },
+      { r: [410, 160, 230, 120] },
+      { r: [0, 0, 640, 40] }
+    ],
+    shelves: [[330, 160, 80, 4]],
+    bulbs: [{ x: 305, y: 160 }]
   }
 ];

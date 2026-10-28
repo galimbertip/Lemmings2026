@@ -15,6 +15,11 @@
   const PUFF_RADIUS = 7;       // cratere piccolo: non intrappola chi passa dopo
   const GERMINATE = 120;       // 2 s perché una spora atterrata diventi un Nailcap
   const SPORE_COLOR = '#FF7AC6';
+  const GLOW_COLOR = '#FFE66D';
+  const GLOW_RADIUS = 56;      // un Glow accende le mensole entro questo raggio
+  const BULB_TIME = 600;       // un fungo-lampada acceso resta acceso 10 s
+  const BULB_IGNITE = 20;      // distanza a cui un Glow accende la lampada
+  const REVEAL_CELL = 8;       // griglia della memoria delle zone già viste
   const BASE_CAP = '#8A5CF6';
   const STEM = '#EFE8FF';
   const BRICK = [207, 198, 238];
@@ -28,9 +33,10 @@
     ram:     { name: 'Ram',     color: '#E5484D', desc: 'Sfonda in orizzontale' },
     stretch: { name: 'Stretch', color: '#F2B84B', desc: 'Allunga il gambo in una rampa' },
     clinger: { name: 'Clinger', color: '#7CF29A', desc: 'Scala le pareti', trait: true },
-    puff:    { name: 'Puff',    color: SPORE_COLOR, desc: 'Scoppia in una spora che il vento trasporta: dove atterra rinasce' }
+    puff:    { name: 'Puff',    color: SPORE_COLOR, desc: 'Scoppia in una spora che il vento trasporta: dove atterra rinasce' },
+    glow:    { name: 'Glow',    color: GLOW_COLOR, desc: 'Il cappello si accende: illumina il buio e rende solide le mensole di luce', trait: true }
   };
-  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger', 'puff'];
+  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger', 'puff', 'glow'];
 
   // Ambientazione: sottobosco notturno bioluminescente (palette GPverse)
   const THEME = {
@@ -61,11 +67,18 @@
   bgCanvas.width = W;
   bgCanvas.height = H;
   const bctx = bgCanvas.getContext('2d');
+  const darkCanvas = document.createElement('canvas');
+  darkCanvas.width = W;
+  darkCanvas.height = H;
+  const dctx = darkCanvas.getContext('2d');
   const portraitQuery = window.matchMedia('(orientation: portrait) and (max-width: 900px)');
 
   // ---------- Stato ----------
-  // mask: 0 aria, 1 roccia, 2 gambo (costruito da Stretch)
+  // mask: 0 aria, 1 roccia, 2 gambo (costruito da Stretch), 3 mensola di luce
   let mask = new Uint8Array(W * H);
+  let shelfId = new Uint8Array(W * H);   // quale mensola occupa il pixel (statico per livello)
+  let shelfLit = [];                     // mensole accese in questo istante
+  let revealed = null;                   // zone già viste nei livelli bui (solo grafica)
   let state = null;
   let ambient = [];
   let selectedRole = null;
@@ -96,7 +109,36 @@
     x |= 0; y |= 0;
     if (x < 0 || x >= W) return true;
     if (y < 0 || y >= H) return false;
-    return mask[y * W + x] !== 0;
+    const k = y * W + x;
+    const m = mask[k];
+    if (m === 3) return shelfLit[shelfId[k]] === true;
+    return m !== 0;
+  }
+
+  // Mensole di luce: solide solo se un Glow o una lampada accesa è abbastanza vicino
+  function distToRect(px, py, r) {
+    const dx = Math.max(r[0] - px, 0, px - (r[0] + r[2] - 1));
+    const dy = Math.max(r[1] - py, 0, py - (r[1] + r[3] - 1));
+    return dx * dx + dy * dy;
+  }
+  function updateLights() {
+    const s = state;
+    const shelves = s.level.shelves || [];
+    shelfLit = [false];
+    const r2 = GLOW_RADIUS * GLOW_RADIUS;
+    for (let i = 0; i < shelves.length; i++) {
+      let lit = false;
+      for (const c of s.caps) {
+        if (c.dead || c.saved || !c.glow) continue;
+        if (distToRect(c.x, c.y - 6, shelves[i]) <= r2) { lit = true; break; }
+      }
+      if (!lit) {
+        for (const b of s.bulbs) {
+          if (b.t > 0 && distToRect(b.x, b.y - 8, shelves[i]) <= r2) { lit = true; break; }
+        }
+      }
+      shelfLit[i + 1] = lit;
+    }
   }
 
   function buildMask(level) {
@@ -117,6 +159,18 @@
         }
       }
     }
+    shelfId = new Uint8Array(W * H);
+    (level.shelves || []).forEach((r, n) => {
+      const [x, y, w, h] = r;
+      for (let j = Math.max(0, y); j < Math.min(H, y + h); j++) {
+        for (let i = Math.max(0, x); i < Math.min(W, x + w); i++) {
+          const k = j * W + i;
+          if (mask[k]) continue;
+          mask[k] = 3;
+          shelfId[k] = n + 1;
+        }
+      }
+    });
   }
 
   // Disegna il terreno a partire dalla mask (all'avvio e dopo ogni riavvolgimento)
@@ -127,7 +181,7 @@
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         const k = y * W + x;
-        if (!mask[k]) continue;
+        if (!mask[k] || mask[k] === 3) continue;
         if (mask[k] === 2) { put(k, BRICK); continue; }
         let depth = 0;
         while (depth < 4 && y - depth - 1 >= 0 && mask[(y - depth - 1) * W + x]) depth++;
@@ -162,7 +216,8 @@
     x0 |= 0; y0 |= 0;
     for (let j = y0; j < y0 + h; j++) {
       if (j < 0 || j >= H) continue;
-      for (let i = x0; i < x0 + w; i++) if (i >= 0 && i < W) mask[j * W + i] = 0;
+      // le mensole di luce non si scavano
+      for (let i = x0; i < x0 + w; i++) if (i >= 0 && i < W && mask[j * W + i] !== 3) mask[j * W + i] = 0;
     }
     tctx.clearRect(x0, y0, w, h);
   }
@@ -288,6 +343,7 @@
       level,
       caps: [],
       spores: [],
+      bulbs: (level.bulbs || []).map((b) => ({ x: b.x, y: b.y, t: 0 })),
       particles: [],
       roles: Object.assign({}, level.roles),
       released: 0,
@@ -303,6 +359,8 @@
       keyframes: [],
       maxTick: 0
     };
+    revealed = level.dark ? new Uint8Array(Math.ceil(W / REVEAL_CELL) * Math.ceil(H / REVEAL_CELL)) : null;
+    updateLights();
     saveKeyframe();
     progress.last = index;
     saveProgress();
@@ -329,6 +387,7 @@
       mask: mask.slice(),
       caps: s.caps.map((c) => Object.assign({}, c)),
       spores: s.spores.map((p) => Object.assign({}, p)),
+      bulbs: s.bulbs.map((b) => Object.assign({}, b)),
       roles: Object.assign({}, s.roles),
       released: s.released,
       saved: s.saved,
@@ -345,6 +404,7 @@
     paintTerrain();
     s.caps = kf.caps.map((c) => Object.assign({}, c));
     s.spores = kf.spores.map((p) => Object.assign({}, p));
+    s.bulbs = kf.bulbs.map((b) => Object.assign({}, b));
     s.roles = Object.assign({}, kf.roles);
     s.released = kf.released;
     s.saved = kf.saved;
@@ -354,6 +414,7 @@
     s.particles = [];
     s.ai = 0;
     while (s.ai < s.log.length && s.log[s.ai].tick < s.tick) s.ai++;
+    updateLights();
     s.silent = true;
     while (s.tick < target && !s.over) step();
     s.silent = false;
@@ -371,7 +432,7 @@
 
   // ---------- Nailcap ----------
   function newCap(x, y, dir) {
-    return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, bricks: 0, wx: 0 };
+    return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, glow: false, bricks: 0, wx: 0 };
   }
 
   function spawn() {
@@ -604,6 +665,7 @@
     if (c.mode === 'puff') return false;
     if (role === 'parasol') return !c.parasol;
     if (role === 'clinger') return !c.clinger;
+    if (role === 'glow') return !c.glow;
     return c.mode === 'walk';
   }
 
@@ -611,6 +673,7 @@
     if (!c || c.dead || c.saved || !canAssign(c, role) || (state.roles[role] || 0) <= 0) return false;
     if (role === 'parasol') c.parasol = true;
     else if (role === 'clinger') c.clinger = true;
+    else if (role === 'glow') c.glow = true;
     else {
       c.mode = role;
       c.t = 0;
@@ -632,6 +695,21 @@
       changed = true;
     }
     if (changed && !s.silent) renderRoles();
+
+    // funghi-lampada: un Glow che passa vicino li accende per 10 s
+    for (const b of s.bulbs) {
+      if (b.t > 0) b.t--;
+      for (const c of s.caps) {
+        if (c.dead || c.saved || !c.glow) continue;
+        const dx = c.x - b.x, dy = c.y - b.y;
+        if (dx * dx + dy * dy <= BULB_IGNITE * BULB_IGNITE) {
+          if (b.t === 0) burst(b.x, b.y - 10, GLOW_COLOR, 10);
+          b.t = BULB_TIME;
+          break;
+        }
+      }
+    }
+    updateLights();
 
     s.tick++;
     if (s.released < s.level.total && s.tick >= s.nextSpawn) {
@@ -783,6 +861,15 @@
     if (ROLE_DEFS[c.mode]) capColor = ROLE_DEFS[c.mode].color;
     else if (c.mode === 'climb') capColor = ROLE_DEFS.clinger.color;
     else if (gliding) capColor = ROLE_DEFS.parasol.color;
+    else if (c.glow) capColor = GLOW_COLOR;
+
+    if (c.glow) {
+      const g = ctx.createRadialGradient(x, y - 8, 1, x, y - 8, 14);
+      g.addColorStop(0, 'rgba(255, 230, 109, 0.45)');
+      g.addColorStop(1, 'rgba(255, 230, 109, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - 14, y - 22, 28, 28);
+    }
 
     if (c.mode === 'stump') {
       ctx.strokeStyle = ROLE_DEFS.stump.color;
@@ -867,6 +954,110 @@
     ctx.stroke();
   }
 
+  // Mensole di luce: piene e brillanti se accese, solo un contorno tratteggiato se spente
+  function drawShelves(now) {
+    const shelves = state.level.shelves || [];
+    shelves.forEach((r, i) => {
+      const lit = shelfLit[i + 1];
+      if (lit) {
+        const a = 0.75 + 0.2 * Math.sin(now / 200 + i);
+        ctx.fillStyle = `rgba(159, 246, 250, ${a})`;
+        ctx.fillRect(r[0], r[1], r[2], r[3]);
+        ctx.fillStyle = 'rgba(159, 246, 250, 0.18)';
+        ctx.fillRect(r[0], r[1] - 3, r[2], 3);
+      } else {
+        ctx.strokeStyle = 'rgba(159, 246, 250, 0.28)';
+        ctx.lineWidth = 0.8;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(r[0] + 0.5, r[1] + 0.5, r[2] - 1, r[3] - 1);
+        ctx.setLineDash([]);
+      }
+    });
+  }
+
+  // Funghi-lampada: si accendono al passaggio di un Glow e si spengono dopo 10 s
+  function drawBulbs(now) {
+    for (const b of state.bulbs) {
+      const on = b.t > 0;
+      const fade = on ? Math.min(1, b.t / 120) : 0;
+      const blink = on && b.t < 120 && Math.floor(now / 120) % 2 === 0 ? 0.4 : 1;
+      ctx.fillStyle = '#CFC6EE';
+      ctx.fillRect(b.x - 1.5, b.y - 9, 3, 9);
+      ctx.fillStyle = on ? `rgba(255, 230, 109, ${(0.5 + 0.5 * fade) * blink})` : '#3A3558';
+      ctx.beginPath();
+      ctx.moveTo(b.x - 8, b.y - 8);
+      ctx.quadraticCurveTo(b.x, b.y - 24, b.x + 8, b.y - 8);
+      ctx.closePath();
+      ctx.fill();
+      if (on) {
+        // anello che si consuma: quanto resta acceso
+        ctx.strokeStyle = 'rgba(255, 230, 109, 0.7)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y - 13, 12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (b.t / BULB_TIME));
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Buio: velo scuro con fori di luce; le zone già viste restano in penombra
+  function drawDarkness() {
+    const s = state;
+    const lights = [];
+    const e = s.level.entrance, ex = s.level.exit;
+    lights.push([e.x, e.y - 24, 34], [ex.x, ex.y - 16, 40]);
+    for (const c of s.caps) {
+      if (c.dead || c.saved) continue;
+      lights.push([c.x, c.y - 7, c.glow ? GLOW_RADIUS + 6 : 16]);
+    }
+    for (const b of s.bulbs) if (b.t > 0) lights.push([b.x, b.y - 12, GLOW_RADIUS * Math.min(1, 0.5 + b.t / 240)]);
+    for (const p of s.spores) lights.push([p.x, p.y, 12]);
+
+    const cols = Math.ceil(W / REVEAL_CELL);
+    for (const [lx, ly, lr] of lights) {
+      const rr = lr * 0.75;
+      for (let cy = Math.max(0, Math.floor((ly - rr) / REVEAL_CELL)); cy <= Math.min(Math.ceil(H / REVEAL_CELL) - 1, Math.floor((ly + rr) / REVEAL_CELL)); cy++) {
+        for (let cx = Math.max(0, Math.floor((lx - rr) / REVEAL_CELL)); cx <= Math.min(cols - 1, Math.floor((lx + rr) / REVEAL_CELL)); cx++) {
+          const dx = (cx + 0.5) * REVEAL_CELL - lx, dy = (cy + 0.5) * REVEAL_CELL - ly;
+          if (dx * dx + dy * dy <= rr * rr) revealed[cy * cols + cx] = 1;
+        }
+      }
+    }
+
+    dctx.globalCompositeOperation = 'source-over';
+    dctx.clearRect(0, 0, W, H);
+    dctx.fillStyle = 'rgba(3, 4, 12, 0.97)';
+    dctx.fillRect(0, 0, W, H);
+    dctx.globalCompositeOperation = 'destination-out';
+    dctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
+    for (let i = 0; i < revealed.length; i++) {
+      if (revealed[i]) dctx.fillRect((i % cols) * REVEAL_CELL, Math.floor(i / cols) * REVEAL_CELL, REVEAL_CELL, REVEAL_CELL);
+    }
+    for (const [lx, ly, lr] of lights) {
+      const g = dctx.createRadialGradient(lx, ly, lr * 0.25, lx, ly, lr);
+      g.addColorStop(0, 'rgba(0, 0, 0, 1)');
+      g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      dctx.fillStyle = g;
+      dctx.fillRect(lx - lr, ly - lr, lr * 2, lr * 2);
+    }
+    dctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(darkCanvas, 0, 0);
+
+    // riflesso caldo attorno a Glow e lampade accese
+    ctx.globalCompositeOperation = 'lighter';
+    const warm = (x, y, r, a) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255, 230, 109, ${a})`);
+      g.addColorStop(1, 'rgba(255, 230, 109, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+    for (const c of s.caps) if (c.glow && !c.dead && !c.saved) warm(c.x, c.y - 8, GLOW_RADIUS, 0.10);
+    for (const b of s.bulbs) if (b.t > 0) warm(b.x, b.y - 12, GLOW_RADIUS, 0.14 * Math.min(1, b.t / 120));
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
   // raffiche visibili: trattini che scorrono nella direzione e alla velocità del vento
   let windOff = 0;
   let lastDraw = 0;
@@ -904,6 +1095,7 @@
     drawExit(state.level.exit.x, state.level.exit.y, now / 16);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(terrainCanvas, 0, 0);
+    if (state.bulbs.length) drawBulbs(now);
     for (const c of state.caps) if (!c.dead && !c.saved) drawCap(c);
     for (const p of state.spores) drawSpore(p, now);
     for (const p of state.particles) {
@@ -912,6 +1104,9 @@
       ctx.fillRect(p.x - 0.8, p.y - 0.8, 1.6, 1.6);
     }
     ctx.globalAlpha = 1;
+    if (state.level.dark) drawDarkness();
+    // le mensole sono luce: si vedono anche nel buio
+    if (state.level.shelves) drawShelves(now);
     if (tapFx) {
       ctx.strokeStyle = 'rgba(61, 232, 240, 0.8)';
       ctx.lineWidth = 1;
@@ -1200,6 +1395,7 @@
     get state() { return state; },
     step, loadLevel, solid, seek, commitAction,
     wind: (t) => windAt(state.level, t),
-    get mask() { return mask; }
+    get mask() { return mask; },
+    get shelfLit() { return shelfLit; }
   };
 })();

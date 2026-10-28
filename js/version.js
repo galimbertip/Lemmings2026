@@ -1,7 +1,18 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.5.0';
+window.NAILCAP_VERSION = 'V.0.6.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.6.0',
+    date: '2026-10-28',
+    items: [
+      'Livelli al buio: si vede solo attorno ai Nailcap e alle luci; le zone già viste restano in penombra',
+      'Nuovo ruolo Glow: il cappello si accende e illumina il buio (tratto permanente)',
+      'Mensole di luce: reggono solo se un Glow o una lampada accesa sono vicini',
+      'Funghi-lampada: un Glow che passa li accende per 10 secondi, con un anello che mostra il tempo rimasto',
+      'Mondo 4 "Le grotte buie" con 3 livelli: Al buio, Lampade, La caverna'
+    ]
+  },
   {
     version: 'V.0.5.0',
     date: '2026-10-25',

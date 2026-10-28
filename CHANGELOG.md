@@ -2,6 +2,13 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.6.0 — 2026-10-28
+- Livelli al buio: si vede solo attorno ai Nailcap e alle luci; le zone già viste restano in penombra
+- Nuovo ruolo Glow: il cappello si accende e illumina il buio (tratto permanente)
+- Mensole di luce: reggono solo se un Glow o una lampada accesa sono vicini
+- Funghi-lampada: un Glow che passa li accende per 10 secondi, con un anello che mostra il tempo rimasto
+- Mondo 4 "Le grotte buie" con 3 livelli: Al buio, Lampade, La caverna
+
 ## V.0.5.0 — 2026-10-25
 - Vento a raffiche: cambia forza e direzione, indicatore in alto e raffiche visibili sullo sfondo
 - Nuovo ruolo Puff: scoppia in una spora che il vento trasporta; dove atterra germoglia un nuovo Nailcap
