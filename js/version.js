@@ -1,7 +1,16 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.6.1';
+window.NAILCAP_VERSION = 'V.0.7.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.7.0',
+    date: '2026-10-29',
+    items: [
+      'Progressi sincronizzati su tutti i dispositivi: accesso con Google dal menu Livelli',
+      'Unione dei progressi senza perdite: un livello superato vale ovunque e per ogni livello si tiene il record più alto',
+      'Riallineamento automatico quando torni sul gioco dopo aver giocato su un altro dispositivo'
+    ]
+  },
   {
     version: 'V.0.6.1',
     date: '2026-10-28',

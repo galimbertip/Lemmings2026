@@ -2,6 +2,11 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.7.0 — 2026-10-29
+- Progressi sincronizzati su tutti i dispositivi: accesso con Google dal menu Livelli
+- Unione dei progressi senza perdite: un livello superato vale ovunque e per ogni livello si tiene il record più alto
+- Riallineamento automatico quando torni sul gioco dopo aver giocato su un altro dispositivo
+
 ## V.0.6.1 — 2026-10-28
 - Nel menu Livelli si vede il record di Nailcap salvati per ogni livello superato
 - Predisposta la sincronizzazione dei progressi con Firebase (si attiva con la configurazione)

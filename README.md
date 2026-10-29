@@ -50,7 +50,7 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 - ✅ **Spore e vento**: Puff scoppia in una spora, il vento la porta e dove atterra germoglia un nuovo Nailcap. Le raffiche sono un'onda triangolare senza numeri casuali, così la simulazione resta deterministica. Anche il Parasol aperto deriva col vento.
 - ✅ **Buio e luce**: nei livelli bui si vede solo attorno ai Nailcap e alle luci. Le mensole di luce reggono solo se illuminate; i funghi-lampada restano accesi 10 s dopo il passaggio di un Glow.
 - **Terreno distruttibile** condiviso con il motore del remake di Gorilla.
-- **Progressi sincronizzati** tra dispositivi (oggi salvati solo sul dispositivo).
+- ✅ **Progressi sincronizzati** tra dispositivi con accesso Google (Firebase).
 - **Replay condivisibili, editor di livelli, livello del giorno, modalità versus.**
 
 ## Interfaccia
