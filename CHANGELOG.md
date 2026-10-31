@@ -2,6 +2,12 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.9.0 — 2026-10-31
+- Nuova schermata iniziale con il logo GPverse, il titolo NAILCAP a neon e una parata animata di Nailcap
+- Continua riparte dall'ultimo livello giocato, o dal primo ancora da superare
+- Dalla schermata iniziale: Livelli e Novità; dal menu Livelli si torna alla schermata iniziale
+- In basso il riepilogo dei livelli superati e il numero di versione
+
 ## V.0.8.0 — 2026-10-31
 - Nuovo ruolo Sprout: si pianta e cresce in un trampolino, chi ci passa sopra salta muri e fossi
 - Nuovo ruolo Mycelink: due nodi di micelio collegano due punti, chi tocca un nodo riemerge dall'altro

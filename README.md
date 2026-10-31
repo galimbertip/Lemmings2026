@@ -55,6 +55,7 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 
 ## Interfaccia
 
+- **Schermata iniziale**: logo GPverse, titolo a neon e parata animata; Continua (ultimo livello o primo da superare), Livelli, Novità.
 - Orizzontale di default; in verticale compare l'avviso "ruota il telefono".
 - Ruoli in una **striscia sottile a sinistra**: tocca un cappello per scegliere il ruolo, la freccia per vedere i nomi.
 - Tocco con raggio ampio: non serve centrare il singolo pixel.
@@ -72,6 +73,7 @@ js/levels.js        mondi e livelli
 js/game.js          motore: terreno, Nailcap, ruoli, riavvolgimento, disegno, input
 js/firebase-config.js  configurazione Firebase (null = sincronizzazione spenta)
 js/sync.js          accesso Google e sincronizzazione dei progressi su Firestore
+icons/              icona dell'app e logo GPverse della schermata iniziale
 ```
 
 Nessuna build: è un sito statico servito da GitHub Pages. L'unica dipendenza esterna è l'SDK Firebase, caricato solo se la sincronizzazione è configurata.

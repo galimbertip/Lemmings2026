@@ -1632,6 +1632,7 @@
       '<h2>Livelli</h2>' + html +
       '<div class="row">' +
       (state ? '<button class="btn" id="ov-close">Torna al livello</button><button class="btn" id="ov-restart">Ricomincia livello</button>' : '') +
+      '<button class="btn" id="ov-title">Schermata iniziale</button>' +
       '</div>' +
       '<div id="sync-slot" class="sync" hidden></div>',
       'levels'
@@ -1641,6 +1642,7 @@
     });
     bind('ov-close', backToGame);
     bind('ov-restart', () => loadLevel(state.index));
+    bind('ov-title', showTitle);
     try { window.dispatchEvent(new Event('nailcap:levels-open')); } catch (e) { /* ignora */ }
   }
 
@@ -1657,6 +1659,212 @@
   $('rotate-ver').textContent = VERSION;
   $('version-btn').addEventListener('click', showChangelog);
 
+
+  // ---------- Schermata iniziale ----------
+  const titleEl = $('title');
+  const tCanvas = $('title-canvas');
+  const tctx2 = tCanvas.getContext('2d');
+  const tScene = { w: 0, h: 0, dpr: 1, bg: null, walkers: [], spores: [], glider: null, seed: 1 };
+  let titleRaf = 0;
+  let titleLast = 0;
+
+  function firstOpenLevel() {
+    for (let i = 0; i < LEVELS.length; i++) if (!progress.done[LEVELS[i].code] && isUnlocked(i)) return i;
+    return -1;
+  }
+
+  function refreshTitle() {
+    const done = LEVELS.filter((l) => progress.done[l.code]).length;
+    const started = done > 0 || (progress.last || 0) > 0;
+    // Continua: dall'ultimo livello aperto; se è già superato, dal primo ancora da fare
+    let next = Math.min(progress.last || 0, LEVELS.length - 1);
+    if (progress.done[LEVELS[next].code]) {
+      const open = firstOpenLevel();
+      if (open >= 0) next = open;
+    }
+    titleEl.dataset.next = String(next);
+    $('t-play-label').textContent = started ? 'Continua' : 'Gioca';
+    $('t-play-sub').textContent = LEVELS[next].code + ' · ' + LEVELS[next].name;
+    $('t-progress').textContent = done === LEVELS.length
+      ? 'Tutti i ' + LEVELS.length + ' livelli superati!'
+      : (done === 1 ? '1 livello superato' : done + ' livelli superati') + ' su ' + LEVELS.length + ' · ' + WORLDS.length + ' mondi';
+    $('t-ver').textContent = VERSION;
+  }
+
+  function showTitle() {
+    closeOverlay();
+    paused = true;
+    updatePauseUi();
+    refreshTitle();
+    titleEl.hidden = false;
+    resizeTitle();
+    if (!titleRaf) { titleLast = performance.now(); titleRaf = requestAnimationFrame(titleFrame); }
+  }
+
+  function hideTitle() {
+    titleEl.hidden = true;
+    if (titleRaf) cancelAnimationFrame(titleRaf);
+    titleRaf = 0;
+    paused = false;
+    updatePauseUi();
+  }
+
+  $('t-play').addEventListener('click', () => {
+    const next = Number(titleEl.dataset.next || 0);
+    hideTitle();
+    if (!state || state.index !== next || state.started) loadLevel(next);
+    else showIntro();
+  });
+  $('t-levels').addEventListener('click', () => { hideTitle(); showLevels(); });
+  $('t-news').addEventListener('click', () => { hideTitle(); showChangelog(); });
+
+  // Scena animata: una parata di Nailcap con qualche ruolo in azione
+  function resizeTitle() {
+    const r = titleEl.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    tScene.w = Math.max(1, r.width);
+    tScene.h = Math.max(1, r.height);
+    tScene.dpr = dpr;
+    tCanvas.width = Math.round(tScene.w * dpr);
+    tCanvas.height = Math.round(tScene.h * dpr);
+    buildTitleScene();
+  }
+  window.addEventListener('resize', () => { if (!titleEl.hidden) resizeTitle(); });
+
+  function buildTitleScene() {
+    const { w, h, dpr } = tScene;
+    const rand = rng(4242);
+    const bg = document.createElement('canvas');
+    bg.width = tCanvas.width;
+    bg.height = tCanvas.height;
+    const b = bg.getContext('2d');
+    b.scale(dpr, dpr);
+    const grad = b.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, THEME.sky[0]);
+    grad.addColorStop(0.6, THEME.sky[1]);
+    grad.addColorStop(1, THEME.sky[2]);
+    b.fillStyle = grad;
+    b.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) {
+      b.fillStyle = `rgba(159, 246, 250, ${0.1 + rand() * 0.35})`;
+      b.fillRect(rand() * w, rand() * h * 0.75, 1.2, 1.2);
+    }
+    const ground = h - Math.max(32, h * 0.08);
+    const n = Math.max(4, Math.round(w / 170));
+    for (let i = 0; i < n; i++) {
+      const x = (i + 0.5) * (w / n) + (rand() - 0.5) * 60;
+      const capR = h * (0.12 + rand() * 0.14);
+      const top = h * (0.18 + rand() * 0.32);
+      const sw = 10 + rand() * 14;
+      b.fillStyle = THEME.far;
+      b.beginPath();
+      b.moveTo(x - sw / 2, ground);
+      b.quadraticCurveTo(x - sw / 2, (top + ground) / 2, x - sw / 3, top);
+      b.lineTo(x + sw / 3, top);
+      b.quadraticCurveTo(x + sw / 2, (top + ground) / 2, x + sw / 2, ground);
+      b.closePath();
+      b.fill();
+      b.beginPath();
+      b.moveTo(x - capR, top + 6);
+      b.quadraticCurveTo(x, top - capR * 0.95, x + capR, top + 6);
+      b.closePath();
+      b.fill();
+      b.fillStyle = THEME.farGlow;
+      for (let k = 0; k < 7; k++) {
+        const a = rand() * Math.PI;
+        b.beginPath();
+        b.arc(x - Math.cos(a) * capR * 0.6, top - Math.sin(a) * capR * 0.38, 2 + rand() * 3.5, 0, Math.PI * 2);
+        b.fill();
+      }
+    }
+    // terreno con il bordo luminoso
+    b.fillStyle = '#211C3A';
+    b.fillRect(0, ground, w, h - ground);
+    b.fillStyle = '#3DE8F0';
+    b.fillRect(0, ground, w, 2);
+    b.fillStyle = 'rgba(61, 232, 240, 0.25)';
+    b.fillRect(0, ground + 2, w, 2);
+    tScene.bg = bg;
+    tScene.ground = ground;
+
+    // la parata: Nailcap a distanze diverse, qualcuno con un ruolo
+    const kinds = ['base', 'base', 'glow', 'base', 'clinger', 'base', 'base', 'glow', 'base', 'ram'];
+    tScene.walkers = [];
+    const count = Math.max(6, Math.round(w / 64));
+    for (let i = 0; i < count; i++) {
+      tScene.walkers.push({ x: (i / count) * (w + 120) - 60, kind: kinds[i % kinds.length], ph: rand() * 6 });
+    }
+    tScene.spores = [];
+    for (let i = 0; i < 26; i++) tScene.spores.push({ x: rand() * w, y: rand() * h, v: 6 + rand() * 14, r: 0.8 + rand() * 1.6, ph: rand() * 6 });
+    tScene.glider = { x: w * 0.2, y: -40, vx: 18 };
+  }
+
+  function drawTitleCap(x, y, s, kind, t) {
+    const c = tctx2;
+    const bob = Math.abs(Math.sin(t * 6)) * 1.2 * s;
+    c.save();
+    c.translate(x, y - bob);
+    c.scale(s, s);
+    const color = kind === 'glow' ? GLOW_COLOR : kind === 'clinger' ? ROLE_DEFS.clinger.color : kind === 'ram' ? ROLE_DEFS.ram.color : kind === 'parasol' ? ROLE_DEFS.parasol.color : BASE_CAP;
+    if (kind === 'glow') {
+      const g = c.createRadialGradient(0, -8, 1, 0, -8, 18);
+      g.addColorStop(0, 'rgba(255, 230, 109, 0.5)');
+      g.addColorStop(1, 'rgba(255, 230, 109, 0)');
+      c.fillStyle = g;
+      c.fillRect(-18, -26, 36, 36);
+    }
+    c.fillStyle = STEM;
+    c.beginPath();
+    c.moveTo(-2, 0); c.lineTo(-2, -7); c.quadraticCurveTo(-2, -8, -1, -8); c.lineTo(1, -8); c.quadraticCurveTo(2, -8, 2, -7); c.lineTo(2, 0); c.closePath();
+    c.fill();
+    if (kind === 'parasol') {
+      c.strokeStyle = STEM; c.lineWidth = 0.6;
+      c.beginPath(); c.moveTo(0, -9); c.lineTo(0, -14); c.stroke();
+      c.fillStyle = color;
+      c.beginPath(); c.moveTo(-9, -13); c.quadraticCurveTo(0, -25, 9, -13); c.closePath(); c.fill();
+    } else {
+      c.fillStyle = color;
+      c.beginPath(); c.moveTo(-5, -7); c.quadraticCurveTo(kind === 'ram' ? 2 : 0, -18, 5, -7); c.closePath(); c.fill();
+    }
+    c.fillStyle = '#111';
+    c.fillRect(-0.7, -5.5, 0.9, 1.3);
+    c.fillRect(1.2, -5.5, 0.9, 1.3);
+    c.restore();
+  }
+
+  function titleFrame(now) {
+    titleRaf = requestAnimationFrame(titleFrame);
+    const dt = Math.min(0.05, (now - titleLast) / 1000);
+    titleLast = now;
+    const t = now / 1000;
+    const { w, h, dpr, ground } = tScene;
+    const c = tctx2;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    if (tScene.bg) c.drawImage(tScene.bg, 0, 0);
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const s = Math.min(3, Math.max(1.6, h / 220));
+    // spore che salgono
+    for (const p of tScene.spores) {
+      p.y -= p.v * dt;
+      if (p.y < -10) { p.y = h + 10; }
+      const x = p.x + Math.sin(t * 0.7 + p.ph) * 10;
+      c.fillStyle = `rgba(184, 255, 249, ${0.25 + 0.3 * (0.5 + 0.5 * Math.sin(t * 2 + p.ph))})`;
+      c.beginPath(); c.arc(x, p.y, p.r, 0, Math.PI * 2); c.fill();
+    }
+    // la parata
+    for (const wk of tScene.walkers) {
+      wk.x += 16 * dt * (s / 2);
+      if (wk.x > w + 60) wk.x = -60;
+      drawTitleCap(wk.x, ground, s, wk.kind, t + wk.ph);
+    }
+    // un Parasol che plana dall'alto
+    const gl = tScene.glider;
+    gl.y += 22 * dt;
+    gl.x += Math.sin(t * 0.8) * 10 * dt + 6 * dt;
+    if (gl.y > ground) { gl.y = -40; gl.x = w * (0.1 + ((Math.floor(t) * 37) % 70) / 100); }
+    drawTitleCap(gl.x, gl.y, s, 'parasol', 0);
+  }
+
   // ---------- Ciclo principale ----------
   let last = performance.now();
   let acc = 0;
@@ -1664,7 +1872,7 @@
     let dt = now - last;
     last = now;
     if (dt > 250) dt = 250;
-    const running = state && state.started && !state.over && !paused && overlay.hidden && !portraitQuery.matches;
+    const running = state && state.started && !state.over && !paused && overlay.hidden && titleEl.hidden && !portraitQuery.matches;
     if (running) {
       acc += dt * (fast ? 2 : 1);
       while (acc >= TICK) {
@@ -1683,6 +1891,7 @@
   resize();
   loadLevel(Math.min(progress.last || 0, LEVELS.length - 1));
   requestAnimationFrame(frame);
+  showTitle();
 
   // Esposto per i test automatici
   window.__nailcap = {

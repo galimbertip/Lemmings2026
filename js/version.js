@@ -1,7 +1,17 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.8.0';
+window.NAILCAP_VERSION = 'V.0.9.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.9.0',
+    date: '2026-10-31',
+    items: [
+      'Nuova schermata iniziale con il logo GPverse, il titolo NAILCAP a neon e una parata animata di Nailcap',
+      'Continua riparte dall\'ultimo livello giocato, o dal primo ancora da superare',
+      'Dalla schermata iniziale: Livelli e Novità; dal menu Livelli si torna alla schermata iniziale',
+      'In basso il riepilogo dei livelli superati e il numero di versione'
+    ]
+  },
   {
     version: 'V.0.8.0',
     date: '2026-10-31',
