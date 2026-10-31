@@ -1,7 +1,15 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.7.0';
+window.NAILCAP_VERSION = 'V.0.7.1';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.7.1',
+    date: '2026-10-31',
+    items: [
+      'Corretto: con uno Stump in campo il livello non finiva mai; ora si chiude quando restano solo Nailcap piantati',
+      'Sradica uno Stump: con Stump selezionato tocca un Nailcap già piantato, torna a camminare e ti restituisce il ruolo'
+    ]
+  },
   {
     version: 'V.0.7.0',
     date: '2026-10-29',

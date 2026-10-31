@@ -689,8 +689,14 @@
   }
 
   // ---------- Simulazione ----------
+  // ruoli "fermi": non raggiungono mai l'uscita e non tengono aperto il livello
+  const STATIONARY = new Set(['stump']);
+
   function canAssign(c, role) {
     if (c.mode === 'puff') return false;
+    // toccare uno Stump con Stump selezionato lo sradica e restituisce il ruolo
+    if (role === 'stump' && c.mode === 'stump') return true;
+    if (STATIONARY.has(c.mode)) return false;
     if (role === 'parasol') return !c.parasol;
     if (role === 'clinger') return !c.clinger;
     if (role === 'glow') return !c.glow;
@@ -698,7 +704,16 @@
   }
 
   function applyRole(c, role) {
-    if (!c || c.dead || c.saved || !canAssign(c, role) || (state.roles[role] || 0) <= 0) return false;
+    if (!c || c.dead || c.saved || !canAssign(c, role)) return false;
+    if (role === 'stump' && c.mode === 'stump') {
+      c.mode = 'walk';
+      c.t = 0;
+      c.sub = 0;
+      state.roles.stump++;
+      burst(c.x, c.y - 10, ROLE_DEFS.stump.color, 6);
+      return true;
+    }
+    if ((state.roles[role] || 0) <= 0) return false;
     if (role === 'parasol') c.parasol = true;
     else if (role === 'clinger') c.clinger = true;
     else if (role === 'glow') c.glow = true;
@@ -752,7 +767,8 @@
     if (s.tick % KEYFRAME_EVERY === 0) saveKeyframe();
     if (s.tick > s.maxTick) s.maxTick = s.tick;
 
-    const alive = s.spores.length > 0 || s.caps.some((c) => !c.dead && !c.saved);
+    // gli Stump piantati non contano: da fermi non possono più cambiare l'esito
+    const alive = s.spores.length > 0 || s.caps.some((c) => !c.dead && !c.saved && !STATIONARY.has(c.mode));
     const timeLeft = s.level.time * 60 - s.tick;
     if ((s.released >= s.level.total && !alive) || timeLeft <= 0) finish();
   }
@@ -791,11 +807,19 @@
     const wx = ((e.clientX - r.left) * view.dpr - view.ox) / view.scale;
     const wy = ((e.clientY - r.top) * view.dpr - view.oy) / view.scale;
     tapFx = { x: wx, y: wy, t: 18 };
-    if (!selectedRole || (state.roles[selectedRole] || 0) <= 0) return;
+    if (!selectedRole) return;
+    const canGive = (state.roles[selectedRole] || 0) > 0;
     let best = -1;
     let bestD = TAP_RADIUS * TAP_RADIUS;
+    // prima i Nailcap che possono ricevere il ruolo; uno Stump si sradica solo se non c'è nessun altro vicino
     state.caps.forEach((c, i) => {
-      if (c.dead || c.saved || !canAssign(c, selectedRole)) return;
+      if (c.dead || c.saved || c.mode === 'stump' || !canGive || !canAssign(c, selectedRole)) return;
+      const dx = c.x - wx, dy = c.y - 6 - wy;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best < 0 && selectedRole === 'stump') state.caps.forEach((c, i) => {
+      if (c.dead || c.saved || c.mode !== 'stump') return;
       const dx = c.x - wx, dy = c.y - 6 - wy;
       const d = dx * dx + dy * dy;
       if (d < bestD) { bestD = d; best = i; }

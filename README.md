@@ -23,7 +23,7 @@ I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fa
 
 | Ruolo | Effetto | Colore cappello | Stato |
 |---|---|---|---|
-| Stump | Si pianta e fa girare la folla | grigio | ✅ |
+| Stump | Si pianta e fa girare la folla; si può sradicare | grigio | ✅ |
 | Rooter | Scava verso il basso | marrone | ✅ |
 | Parasol | Plana senza farsi male (tratto permanente) | turchese | ✅ |
 | Ram | Sfonda in orizzontale | rosso | ✅ |

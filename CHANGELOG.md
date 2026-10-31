@@ -2,6 +2,10 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.7.1 — 2026-10-31
+- Corretto: con uno Stump in campo il livello non finiva mai; ora si chiude quando restano solo Nailcap piantati
+- Sradica uno Stump: con Stump selezionato tocca un Nailcap già piantato, torna a camminare e ti restituisce il ruolo
+
 ## V.0.7.0 — 2026-10-29
 - Progressi sincronizzati su tutti i dispositivi: accesso con Google dal menu Livelli
 - Unione dei progressi senza perdite: un livello superato vale ovunque e per ogni livello si tiene il record più alto
