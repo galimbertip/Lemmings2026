@@ -31,8 +31,8 @@ I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fa
 | Clinger | Scala le pareti (tratto permanente) | verde | ✅ |
 | Puff | Scoppia in una spora che il vento trasporta; dove atterra rinasce | rosa | ✅ |
 | Glow | Illumina il buio, accende mensole di luce e funghi-lampada (tratto permanente) | giallo | ✅ |
-| Mycelink | Collega due punti sotto terra (avanzato) | — | in arrivo |
-| Sprout | Diventa una piattaforma (avanzato) | — | in arrivo |
+| Mycelink | Due nodi collegano due punti: chi tocca un nodo riemerge dall'altro | blu | ✅ |
+| Sprout | Cresce in un trampolino che fa saltare chi ci passa | arancione | ✅ |
 
 I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo quelli che servono.
 
@@ -42,7 +42,7 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 | 2 · Le radici alte | Stretch, Clinger |
 | 3 · La valle del vento | Puff + vento |
 | 4 · Le grotte buie | Glow + buio, mensole di luce, funghi-lampada |
-| Avanzato | Mycelink, Sprout |
+| 5 · Il micelio | Sprout, Mycelink |
 
 ## Pilastri di design (roadmap)
 
@@ -58,7 +58,8 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 - Orizzontale di default; in verticale compare l'avviso "ruota il telefono".
 - Ruoli in una **striscia sottile a sinistra**: tocca un cappello per scegliere il ruolo, la freccia per vedere i nomi.
 - Tocco con raggio ampio: non serve centrare il singolo pixel.
-- A destra: pausa, riavvolgi 5 s, ricomincia, velocità 1×/2×, livelli.
+- A destra: pausa, riavvolgi 5 s, Fioritura, velocità 1×/2×, livelli (con Ricomincia).
+- **Fioritura**: due tocchi e, dopo 5 s di conto alla rovescia, tutti i Nailcap rimasti fioriscono in spore che non germogliano e il livello finisce. È registrata come una mossa, quindi riavvolgendo si annulla.
 - In basso: la timeline, con una tacca colorata per ogni ruolo assegnato.
 
 ## Struttura

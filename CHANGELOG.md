@@ -2,6 +2,14 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.8.0 — 2026-10-31
+- Nuovo ruolo Sprout: si pianta e cresce in un trampolino, chi ci passa sopra salta muri e fossi
+- Nuovo ruolo Mycelink: due nodi di micelio collegano due punti, chi tocca un nodo riemerge dall'altro
+- Mondo 5 "Il micelio" con 3 livelli: Il trampolino, Il filo di micelio, Andata e ritorno
+- Fioritura: due tocchi e dopo 5 s di conto alla rovescia tutti i Nailcap rimasti fioriscono e il livello finisce
+- La Fioritura è una mossa come le altre: riavvolgendo prima del tocco si annulla
+- Il pulsante Ricomincia si trova ora nel menu Livelli e nella schermata di fine livello
+
 ## V.0.7.1 — 2026-10-31
 - Corretto: con uno Stump in campo il livello non finiva mai; ora si chiude quando restano solo Nailcap piantati
 - Sradica uno Stump: con Stump selezionato tocca un Nailcap già piantato, torna a camminare e ti restituisce il ruolo

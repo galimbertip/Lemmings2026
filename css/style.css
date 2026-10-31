@@ -212,6 +212,7 @@ button { font-family: inherit; color: inherit; }
 }
 .ctrl b { font-size: 18px; }
 .ctrl.active { border-color: var(--accent); }
+.ctrl.armed { border-color: #FF7AC6; color: #FF7AC6; background: #2A1424; }
 
 /* Finestre */
 .overlay {
@@ -305,9 +306,9 @@ button { font-family: inherit; color: inherit; }
   .ctrl b { font-size: 16px; }
   #timeline { height: 30px; }
 }
-/* schermi molto bassi: "Ricomincia" resta nel menu Livelli */
+/* schermi molto bassi: la Fioritura resta raggiungibile, si nasconde la velocità */
 @media (max-height: 315px) {
-  #btn-restart { display: none; }
+  #btn-speed { display: none; }
 }
 @media (max-width: 700px) {
   .tb-mid { gap: 10px; }

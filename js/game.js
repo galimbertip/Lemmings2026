@@ -16,6 +16,14 @@
   const GERMINATE = 120;       // 2 s perché una spora atterrata diventi un Nailcap
   const SPORE_COLOR = '#FF7AC6';
   const GLOW_COLOR = '#FFE66D';
+  const SPROUT_COLOR = '#FF8A3D';
+  const LINK_COLOR = '#5B8CFF';
+  const SPROUT_GROW = 45;      // 0,75 s perché il trampolino sia pronto
+  const JUMP_VY = -3.4;        // spinta verso l'alto del trampolino (circa 48 px di salto)
+  const JUMP_VX = 1.2;
+  const GRAVITY = 0.12;
+  const LINK_COOLDOWN = 45;
+  const BLOOM_TIME = 300;      // Fioritura: 5 s di conto alla rovescia    // dopo un passaggio nel micelio non si rientra subito
   const GLOW_RADIUS = 56;      // un Glow accende le mensole entro questo raggio
   const BULB_TIME = 600;       // un fungo-lampada acceso resta acceso 10 s
   const BULB_IGNITE = 20;      // distanza a cui un Glow accende la lampada
@@ -34,9 +42,11 @@
     stretch: { name: 'Stretch', color: '#F2B84B', desc: 'Allunga il gambo in una rampa' },
     clinger: { name: 'Clinger', color: '#7CF29A', desc: 'Scala le pareti', trait: true },
     puff:    { name: 'Puff',    color: SPORE_COLOR, desc: 'Scoppia in una spora che il vento trasporta: dove atterra rinasce' },
-    glow:    { name: 'Glow',    color: GLOW_COLOR, desc: 'Il cappello si accende: illumina il buio e rende solide le mensole di luce', trait: true }
+    glow:    { name: 'Glow',    color: GLOW_COLOR, desc: 'Il cappello si accende: illumina il buio e rende solide le mensole di luce', trait: true },
+    sprout:  { name: 'Sprout',  color: SPROUT_COLOR, desc: 'Si pianta e cresce in un trampolino: chi ci passa sopra spicca un salto' },
+    mycelink: { name: 'Mycelink', color: LINK_COLOR, desc: 'Si pianta e diventa un nodo di micelio: due nodi collegano due punti sotto terra' }
   };
-  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger', 'puff', 'glow'];
+  const ROLE_ORDER = ['stump', 'rooter', 'parasol', 'ram', 'stretch', 'clinger', 'puff', 'glow', 'sprout', 'mycelink'];
 
   // Ambientazione: sottobosco notturno bioluminescente (palette GPverse)
   const THEME = {
@@ -380,6 +390,7 @@
       saved: 0,
       tick: 0,
       nextSpawn: 30,
+      bloomAt: 0,
       started: false,
       over: false,
       silent: false,
@@ -419,7 +430,8 @@
       roles: Object.assign({}, s.roles),
       released: s.released,
       saved: s.saved,
-      nextSpawn: s.nextSpawn
+      nextSpawn: s.nextSpawn,
+      bloomAt: s.bloomAt
     });
   }
 
@@ -437,6 +449,7 @@
     s.released = kf.released;
     s.saved = kf.saved;
     s.nextSpawn = kf.nextSpawn;
+    s.bloomAt = kf.bloomAt;
     s.tick = kf.tick;
     s.over = false;
     s.particles = [];
@@ -460,7 +473,7 @@
 
   // ---------- Nailcap ----------
   function newCap(x, y, dir) {
-    return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, glow: false, bricks: 0, wx: 0 };
+    return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, glow: false, bricks: 0, wx: 0, linkCd: 0 };
   }
 
   function spawn() {
@@ -527,8 +540,39 @@
     return false;
   }
 
+  function partnerOf(node) {
+    for (const o of state.caps) if (o.mode === 'link' && o.link === (node.link ^ 1)) return o;
+    return null;
+  }
+
+  // Trampolino e micelio agiscono su chi cammina e ci passa sopra
+  function touchSpecial(c) {
+    for (const o of state.caps) {
+      if (o === c || o.dead || o.saved) continue;
+      if (Math.abs(o.x - c.x) > 2 || Math.abs(o.y - c.y) > 3) continue;
+      if (o.mode === 'sprout' && o.t >= SPROUT_GROW) {
+        c.mode = 'jump';
+        c.jx = c.x; c.jy = c.y; c.vx = JUMP_VX * c.dir; c.vy = JUMP_VY; c.peak = c.y;
+        o.bounce = state.tick;
+        burst(o.x, o.y - 12, SPROUT_COLOR, 6);
+        return true;
+      }
+      if (o.mode === 'link' && c.linkCd === 0) {
+        const p = partnerOf(o);
+        if (!p) continue;
+        burst(c.x, c.y - 6, LINK_COLOR, 10);
+        c.x = p.x; c.y = p.y;
+        c.linkCd = LINK_COOLDOWN;
+        burst(c.x, c.y - 6, LINK_COLOR, 10);
+        return true;
+      }
+    }
+    return false;
+  }
+
   function updateCap(c) {
     c.t++;
+    if (c.linkCd > 0) c.linkCd--;
     const ex = state.level.exit;
     if (c.mode !== 'fall' && Math.abs(c.x - ex.x) < 6 && Math.abs(c.y - ex.y) < 4) {
       c.saved = true;
@@ -570,6 +614,7 @@
         c.sub += 0.5;
         if (c.sub < 1) return;
         c.sub -= 1;
+        if (touchSpecial(c)) return;
         if (blockedByStump(c)) { c.dir *= -1; return; }
         const nx = c.x + c.dir;
         let up = 0;
@@ -605,6 +650,52 @@
         c.y -= 1;
         return;
       }
+
+      case 'jump': {
+        // volo balistico del trampolino
+        const nx = c.jx + c.vx;
+        if (solid(Math.round(nx), Math.round(c.jy)) || solid(Math.round(nx), Math.round(c.jy) - 6)) c.vx = 0;
+        else c.jx = nx;
+        c.vy += GRAVITY;
+        if (c.vy < 0) {
+          const ny = c.jy + c.vy;
+          if (solid(Math.round(c.jx), Math.round(ny) - 10)) c.vy = 0;
+          else c.jy = ny;
+        } else {
+          let left = c.vy;
+          let landed = false;
+          while (left > 0) {
+            if (solid(Math.round(c.jx), Math.floor(c.jy) + 1)) { landed = true; break; }
+            const d = Math.min(1, left);
+            c.jy += d;
+            left -= d;
+          }
+          if (!landed && solid(Math.round(c.jx), Math.floor(c.jy) + 1)) landed = true;
+          if (landed) {
+            c.x = Math.round(c.jx);
+            c.y = Math.floor(c.jy);
+            while (solid(c.x, c.y)) c.y--;
+            if (c.y - c.peak > FALL_DEATH && !c.parasol) { die(c); return; }
+            c.mode = 'walk'; c.sub = 0;
+            return;
+          }
+          if (c.parasol) {
+            // il Parasol si apre in discesa
+            c.x = Math.round(c.jx); c.y = Math.floor(c.jy);
+            c.mode = 'fall'; c.fall = 13; c.sub = 0;
+            return;
+          }
+        }
+        if (c.jy < c.peak) c.peak = c.jy;
+        c.x = Math.round(c.jx);
+        c.y = Math.round(c.jy);
+        if (c.y > H + 12) die(c, true);
+        return;
+      }
+
+      case 'sprout':
+      case 'link':
+        return;
 
       case 'stump': {
         if (!solid(c.x, c.y + 1)) startFall(c);
@@ -690,7 +781,7 @@
 
   // ---------- Simulazione ----------
   // ruoli "fermi": non raggiungono mai l'uscita e non tengono aperto il livello
-  const STATIONARY = new Set(['stump']);
+  const STATIONARY = new Set(['stump', 'sprout', 'link']);
 
   function canAssign(c, role) {
     if (c.mode === 'puff') return false;
@@ -717,7 +808,12 @@
     if (role === 'parasol') c.parasol = true;
     else if (role === 'clinger') c.clinger = true;
     else if (role === 'glow') c.glow = true;
-    else {
+    else if (role === 'mycelink') {
+      // i nodi si collegano a coppie nell'ordine in cui li pianti: 1° con 2°, 3° con 4°
+      c.link = state.caps.filter((o) => o.mode === 'link').length;
+      c.mode = 'link';
+      c.t = 0;
+    } else {
       c.mode = role;
       c.t = 0;
       c.sub = 0;
@@ -734,7 +830,8 @@
     let changed = false;
     while (s.ai < s.log.length && s.log[s.ai].tick === s.tick) {
       const a = s.log[s.ai++];
-      applyRole(s.caps[a.cap], a.role);
+      if (a.role === 'bloom') startBloom();
+      else applyRole(s.caps[a.cap], a.role);
       changed = true;
     }
     if (changed && !s.silent) renderRoles();
@@ -755,7 +852,8 @@
     updateLights();
 
     s.tick++;
-    if (s.released < s.level.total && s.tick >= s.nextSpawn) {
+    if (s.bloomAt && s.tick >= s.bloomAt) bloomNow();
+    if (!s.bloomAt && s.released < s.level.total && s.tick >= s.nextSpawn) {
       spawn();
       s.nextSpawn = s.tick + s.level.rate;
     }
@@ -788,6 +886,43 @@
   }
 
   // Nuova azione: da qui in poi la storia cambia, il "futuro" registrato si scarta
+  // ---------- Fioritura ----------
+  // Il "fine livello" di Nailcap: dopo 5 s tutti i Nailcap rimasti fioriscono in una nuvola di spore
+  // che non germogliano. È una mossa registrata come le altre, quindi si può annullare riavvolgendo.
+  function startBloom() {
+    const s = state;
+    if (s.bloomAt) return false;
+    s.bloomAt = s.tick + BLOOM_TIME;
+    return true;
+  }
+
+  function bloomNow() {
+    const s = state;
+    for (const c of s.caps) {
+      if (c.dead || c.saved) continue;
+      c.dead = true;
+      burst(c.x, c.y - 8, SPORE_COLOR, 12);
+      burst(c.x, c.y - 8, '#9FF6FA', 8);
+    }
+    for (const p of s.spores) burst(p.x, p.y, SPORE_COLOR, 6);
+    s.spores = [];
+    // chi non è ancora uscito dal baccello non uscirà più
+    s.released = s.level.total;
+  }
+
+  function commitBloom() {
+    const s = state;
+    if (!s || !s.started || s.over || s.bloomAt) return false;
+    s.log.length = s.ai;
+    startBloom();
+    s.log.push({ tick: s.tick, cap: -1, role: 'bloom' });
+    s.ai = s.log.length;
+    s.keyframes = s.keyframes.filter((k) => k.tick <= s.tick);
+    s.maxTick = s.tick;
+    timelineDirty = true;
+    return true;
+  }
+
   function commitAction(capIndex, role) {
     const s = state;
     if (!applyRole(s.caps[capIndex], role)) return false;
@@ -906,6 +1041,67 @@
       ctx.quadraticCurveTo(fx, y - 9 * s, fx + 3 * s, y - 3.5 * s);
       ctx.closePath();
       ctx.fill();
+    }
+  }
+
+  function drawSprout(c, now) {
+    const g = Math.min(1, c.t / SPROUT_GROW);
+    const x = c.x, y = c.y;
+    const squash = c.bounce !== undefined && state.tick - c.bounce < 10 ? 1 - (state.tick - c.bounce) / 10 : 0;
+    const h = (4 + 6 * g) * (1 - 0.35 * squash);
+    const w = (5 + 8 * g) * (1 + 0.25 * squash);
+    ctx.fillStyle = STEM;
+    ctx.fillRect(x - 2, y - h, 4, h);
+    ctx.fillStyle = SPROUT_COLOR;
+    ctx.beginPath();
+    ctx.moveTo(x - w, y - h + 1);
+    ctx.quadraticCurveTo(x, y - h - 9 * g, x + w, y - h + 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.beginPath(); ctx.arc(x - w * 0.4, y - h - 2 * g, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w * 0.35, y - h - 3 * g, 1, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawLinks(now) {
+    const nodes = state.caps.filter((c) => c.mode === 'link');
+    // filo di micelio sotto terra tra i nodi collegati
+    for (const a of nodes) {
+      if (a.link % 2) continue;
+      const b = partnerOf(a);
+      if (!b) continue;
+      ctx.strokeStyle = 'rgba(91, 140, 255, 0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 3]);
+      ctx.lineDashOffset = -now / 40;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y + 2);
+      ctx.bezierCurveTo(a.x, a.y + 40, b.x, b.y + 40, b.x, b.y + 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineDashOffset = 0;
+    }
+    for (const n of nodes) {
+      const paired = !!partnerOf(n);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 160 + n.link);
+      ctx.strokeStyle = paired ? `rgba(91, 140, 255, ${0.4 + 0.5 * pulse})` : 'rgba(91, 140, 255, 0.35)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(n.x, n.y - 1, 9 + 2 * pulse, 3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = STEM;
+      ctx.fillRect(n.x - 2, n.y - 6, 4, 6);
+      ctx.fillStyle = LINK_COLOR;
+      ctx.beginPath();
+      ctx.moveTo(n.x - 6, n.y - 5);
+      ctx.quadraticCurveTo(n.x, n.y - 15, n.x + 6, n.y - 5);
+      ctx.closePath();
+      ctx.fill();
+      // numero della coppia, così si capisce chi è collegato a chi
+      ctx.fillStyle = '#E6F1F5';
+      ctx.font = '600 7px "Exo 2", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String((n.link >> 1) + 1), n.x, n.y - 17);
     }
   }
 
@@ -1151,8 +1347,26 @@
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(terrainCanvas, 0, 0);
     if (state.bulbs.length) drawBulbs(now);
-    for (const c of state.caps) if (!c.dead && !c.saved) drawCap(c);
+    drawLinks(now);
+    for (const c of state.caps) {
+      if (c.dead || c.saved || c.mode === 'link') continue;
+      if (c.mode === 'sprout') drawSprout(c, now);
+      else drawCap(c);
+    }
     for (const p of state.spores) drawSpore(p, now);
+    if (state.bloomAt && !state.over) {
+      const n = Math.max(1, Math.ceil((state.bloomAt - state.tick) / 60));
+      ctx.font = '700 9px "Exo 2", sans-serif';
+      ctx.textAlign = 'center';
+      for (const c of state.caps) {
+        if (c.dead || c.saved) continue;
+        const ty = c.y - (c.mode === 'link' ? 28 : 20);
+        ctx.fillStyle = '#06090D';
+        ctx.fillText(String(n), c.x + 0.6, ty + 0.6);
+        ctx.fillStyle = SPORE_COLOR;
+        ctx.fillText(String(n), c.x, ty);
+      }
+    }
     for (const p of state.particles) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 30));
       ctx.fillStyle = p.color;
@@ -1235,7 +1449,7 @@
         const m = document.createElement('span');
         m.className = 'mark';
         m.style.left = (a.tick / scale * 100) + '%';
-        m.style.background = ROLE_DEFS[a.role].color;
+        m.style.background = a.role === 'bloom' ? SPORE_COLOR : ROLE_DEFS[a.role].color;
         marks.appendChild(m);
       }
     }
@@ -1310,7 +1524,25 @@
     updatePauseUi();
   });
   $('btn-rewind').addEventListener('click', () => rewindBy(REWIND_STEP));
-  $('btn-restart').addEventListener('click', () => { if (state) loadLevel(state.index); });
+  let bloomArmed = 0;
+  function setBloomUi(armed) {
+    const b = $('btn-bloom');
+    b.classList.toggle('armed', armed);
+    $('bloom-label').textContent = armed ? 'Sicuro?' : 'Fioritura';
+    b.setAttribute('aria-label', armed ? 'Tocca di nuovo per far fiorire tutti i Nailcap' : 'Fioritura: termina il livello dopo 5 secondi');
+  }
+  $('btn-bloom').addEventListener('click', () => {
+    if (!state || !state.started || state.over || state.bloomAt) return;
+    if (!bloomArmed) {
+      setBloomUi(true);
+      bloomArmed = setTimeout(() => { bloomArmed = 0; setBloomUi(false); }, 3000);
+      return;
+    }
+    clearTimeout(bloomArmed);
+    bloomArmed = 0;
+    setBloomUi(false);
+    if (commitBloom() && paused) { paused = false; updatePauseUi(); }
+  });
   $('btn-speed').addEventListener('click', () => {
     fast = !fast;
     $('speed-label').textContent = fast ? '2×' : '1×';
@@ -1455,7 +1687,7 @@
   // Esposto per i test automatici
   window.__nailcap = {
     get state() { return state; },
-    step, loadLevel, solid, seek, commitAction,
+    step, loadLevel, solid, seek, commitAction, commitBloom,
     wind: (t) => windAt(state.level, t),
     get mask() { return mask; },
     get shelfLit() { return shelfLit; }

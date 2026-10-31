@@ -9,7 +9,8 @@ window.NAILCAP_WORLDS = [
   { id: 1, name: 'Il sottobosco' },
   { id: 2, name: 'Le radici alte' },
   { id: 3, name: 'La valle del vento' },
-  { id: 4, name: 'Le grotte buie' }
+  { id: 4, name: 'Le grotte buie' },
+  { id: 5, name: 'Il micelio' }
 ];
 
 window.NAILCAP_LEVELS = [
@@ -244,5 +245,59 @@ window.NAILCAP_LEVELS = [
     ],
     shelves: [[330, 160, 80, 4]],
     bulbs: [{ x: 305, y: 160 }]
+  },
+  {
+    world: 5,
+    code: '5-1',
+    name: 'Il trampolino',
+    newRoles: ['sprout'],
+    hint: 'Il muro è troppo alto. Sprout cresce in un trampolino: piantalo poco prima del muro e tutti salteranno oltre.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 150 },
+    exit: { x: 590, y: 200 },
+    roles: { sprout: 2 },
+    terrain: [
+      { r: [0, 200, 640, 80] },
+      { r: [330, 164, 12, 36] }
+    ]
+  },
+  {
+    world: 5,
+    code: '5-2',
+    name: 'Il filo di micelio',
+    newRoles: ['mycelink'],
+    hint: 'Dalla fossa non si esce. Pianta un Mycelink sulla sporgenza e uno nella fossa, sotto la sporgenza: chi torna indietro dal muro risale dal micelio.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    entrance: { x: 70, y: 60 },
+    exit: { x: 25, y: 120 },
+    roles: { mycelink: 2 },
+    terrain: [
+      { r: [0, 120, 200, 20] },
+      { r: [0, 170, 420, 110] },
+      { r: [420, 30, 30, 250] }
+    ]
+  },
+  {
+    world: 5,
+    code: '5-3',
+    name: 'Andata e ritorno',
+    hint: 'L\'uscita è alle tue spalle, davanti c\'è il baratro. Salta sulla piattaforma lontana e torna indietro dal micelio: chi arriva al nodo deve andare verso sinistra.',
+    total: 10,
+    goal: 6,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 100 },
+    exit: { x: 20, y: 150 },
+    roles: { sprout: 1, mycelink: 2 },
+    terrain: [
+      { r: [0, 150, 250, 20] },
+      { r: [290, 150, 350, 20] }
+    ]
   }
 ];

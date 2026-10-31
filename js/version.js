@@ -1,7 +1,19 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.7.1';
+window.NAILCAP_VERSION = 'V.0.8.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.8.0',
+    date: '2026-10-31',
+    items: [
+      'Nuovo ruolo Sprout: si pianta e cresce in un trampolino, chi ci passa sopra salta muri e fossi',
+      'Nuovo ruolo Mycelink: due nodi di micelio collegano due punti, chi tocca un nodo riemerge dall\'altro',
+      'Mondo 5 "Il micelio" con 3 livelli: Il trampolino, Il filo di micelio, Andata e ritorno',
+      'Fioritura: due tocchi e dopo 5 s di conto alla rovescia tutti i Nailcap rimasti fioriscono e il livello finisce',
+      'La Fioritura è una mossa come le altre: riavvolgendo prima del tocco si annulla',
+      'Il pulsante Ricomincia si trova ora nel menu Livelli e nella schermata di fine livello'
+    ]
+  },
   {
     version: 'V.0.7.1',
     date: '2026-10-31',
