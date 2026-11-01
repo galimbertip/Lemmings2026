@@ -62,6 +62,7 @@ I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo 
 - A destra: pausa, riavvolgi 5 s, Fioritura, velocità 1×/2×, livelli (con Ricomincia).
 - **Fioritura**: due tocchi e, dopo 5 s di conto alla rovescia, tutti i Nailcap rimasti fioriscono in spore che non germogliano e il livello finisce. È registrata come una mossa, quindi riavvolgendo si annulla.
 - In basso: la timeline, con una tacca colorata per ogni ruolo assegnato.
+- **Audio**: pulsante in alto (e nella schermata iniziale) per scegliere tra musica ed effetti, solo effetti, spento.
 
 ## Struttura
 
@@ -73,10 +74,11 @@ js/levels.js        mondi e livelli
 js/game.js          motore: terreno, Nailcap, ruoli, riavvolgimento, disegno, input
 js/firebase-config.js  configurazione Firebase (null = sincronizzazione spenta)
 js/sync.js          accesso Google e sincronizzazione dei progressi su Firestore
+js/audio.js         effetti, musica generativa e vento, sintetizzati con la Web Audio API
 icons/              icona dell'app e logo GPverse della schermata iniziale
 ```
 
-Nessuna build: è un sito statico servito da GitHub Pages. L'unica dipendenza esterna è l'SDK Firebase, caricato solo se la sincronizzazione è configurata.
+Nessuna build: è un sito statico servito da GitHub Pages. Il sonoro non usa file audio: è tutto generato nel browser. L'unica dipendenza esterna è l'SDK Firebase, caricato solo se la sincronizzazione è configurata.
 
 ## Sincronizzazione dei progressi
 

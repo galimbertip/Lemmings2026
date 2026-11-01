@@ -2,6 +2,14 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.10.0 — 2026-11-01
+- Sonoro: effetti per ogni evento, sintetizzati in tempo reale e posizionati a destra o a sinistra come sullo schermo
+- Ogni ruolo ha la sua nota; i salvataggi salgono di nota a ogni Nailcap salvato
+- Musica d'ambiente generativa: un tema per la schermata iniziale e uno per ogni mondo
+- Fruscio del vento nei livelli ventosi, più forte con le raffiche
+- Conto alla rovescia della Fioritura udibile, jingle di vittoria e di sconfitta
+- Pulsante audio in alto e nella schermata iniziale: musica ed effetti, solo effetti, spento
+
 ## V.0.9.0 — 2026-10-31
 - Nuova schermata iniziale con il logo GPverse, il titolo NAILCAP a neon e una parata animata di Nailcap
 - Continua riparte dall'ultimo livello giocato, o dal primo ancora da superare

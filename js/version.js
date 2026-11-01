@@ -1,7 +1,19 @@
 // Versione: V.maior.minor.patch — aggiornare a ogni rilascio insieme a CHANGELOG.md
-window.NAILCAP_VERSION = 'V.0.9.0';
+window.NAILCAP_VERSION = 'V.0.10.0';
 
 window.NAILCAP_CHANGELOG = [
+  {
+    version: 'V.0.10.0',
+    date: '2026-11-01',
+    items: [
+      'Sonoro: effetti per ogni evento, sintetizzati in tempo reale e posizionati a destra o a sinistra come sullo schermo',
+      'Ogni ruolo ha la sua nota; i salvataggi salgono di nota a ogni Nailcap salvato',
+      'Musica d\'ambiente generativa: un tema per la schermata iniziale e uno per ogni mondo',
+      'Fruscio del vento nei livelli ventosi, più forte con le raffiche',
+      'Conto alla rovescia della Fioritura udibile, jingle di vittoria e di sconfitta',
+      'Pulsante audio in alto e nella schermata iniziale: musica ed effetti, solo effetti, spento'
+    ]
+  },
   {
     version: 'V.0.9.0',
     date: '2026-10-31',
