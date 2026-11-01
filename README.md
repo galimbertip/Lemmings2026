@@ -35,6 +35,7 @@ I Nailcap cadono da un **baccello di spore** e si salvano nel **cerchio delle fa
 | Sprout | Cresce in un trampolino che fa saltare chi ci passa | arancione | ✅ |
 
 I ruoli si introducono **gradualmente**: ogni livello mette a disposizione solo quelli che servono.
+Ogni mondo ha 5 livelli: i primi 3 sono il percorso principale, il 4° e il 5° sono **Sfide** facoltative che mescolano ruoli di mondi diversi.
 
 | Mondo | Ruoli nuovi |
 |---|---|

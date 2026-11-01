@@ -5,6 +5,7 @@
 // wind: { base, gust, period } in px/tick · dark: livello al buio
 // shelves: mensole di luce [x, y, larghezza, altezza], solide solo se illuminate
 // bulbs: funghi-lampada { x, y } che un Glow accende per 10 s
+// challenge: livello sfida facoltativo, non serve per aprire il mondo successivo
 window.NAILCAP_WORLDS = [
   { id: 1, name: 'Il sottobosco' },
   { id: 2, name: 'Le radici alte' },
@@ -74,6 +75,43 @@ window.NAILCAP_LEVELS = [
     ]
   },
   {
+    world: 1,
+    code: '1-4',
+    challenge: true,
+    name: 'Scava e plana',
+    hint: 'Il piano è alto e chiuso dal muro. Scava un buco, ma chi ci cade dentro deve avere già il Parasol.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 40 },
+    exit: { x: 580, y: 250 },
+    roles: { rooter: 1, parasol: 10 },
+    terrain: [
+      { r: [0, 90, 400, 30] },
+      { r: [400, 20, 20, 70] },
+      { r: [0, 250, 640, 30] }
+    ]
+  },
+  {
+    world: 1,
+    code: '1-5',
+    challenge: true,
+    name: 'Dietro front',
+    hint: 'Davanti c\'è lo strapiombo, l\'uscita è alle spalle oltre un muro. Ferma la folla e apri la strada.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    entrance: { x: 250, y: 150 },
+    exit: { x: 40, y: 200 },
+    roles: { stump: 1, ram: 2 },
+    terrain: [
+      { r: [0, 200, 450, 80] },
+      { r: [120, 140, 20, 60] }
+    ]
+  },
+  {
     world: 2,
     code: '2-1',
     name: 'Il fosso',
@@ -125,6 +163,45 @@ window.NAILCAP_LEVELS = [
       { r: [0, 200, 210, 80] },
       { r: [230, 196, 180, 84] },
       { r: [410, 120, 230, 160] }
+    ]
+  },
+  {
+    world: 2,
+    code: '2-4',
+    challenge: true,
+    name: 'Scala e ponte',
+    hint: 'Prima la parete, poi un fosso sull\'altopiano. Una rampa sola basta, ma va costruita al momento giusto.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 170 },
+    exit: { x: 600, y: 140 },
+    roles: { clinger: 10, stretch: 2 },
+    terrain: [
+      { r: [0, 220, 260, 60] },
+      { r: [260, 140, 180, 140] },
+      { r: [464, 140, 176, 140] }
+    ]
+  },
+  {
+    world: 2,
+    code: '2-5',
+    challenge: true,
+    name: 'Tre gradini',
+    hint: 'Tre gradini troppo alti da scavalcare. Ogni rampa ne supera uno: costruiscila davanti al gradino.',
+    total: 10,
+    goal: 7,
+    rate: 80,
+    time: 240,
+    entrance: { x: 50, y: 180 },
+    exit: { x: 600, y: 194 },
+    roles: { stretch: 4 },
+    terrain: [
+      { r: [0, 230, 640, 50] },
+      { r: [200, 218, 440, 12] },
+      { r: [340, 206, 300, 12] },
+      { r: [480, 194, 160, 12] }
     ]
   },
   {
@@ -180,6 +257,44 @@ window.NAILCAP_LEVELS = [
     terrain: [
       { r: [0, 170, 240, 110] },
       { r: [360, 210, 280, 70] }
+    ]
+  },
+  {
+    world: 3,
+    code: '3-4',
+    challenge: true,
+    name: 'Planata',
+    hint: 'Il vento soffia forte verso destra. Con il Parasol aperto i Nailcap si fanno portare oltre il vuoto.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 0 },
+    exit: { x: 590, y: 230 },
+    wind: { base: 1.2 },
+    roles: { parasol: 10 },
+    terrain: [
+      { r: [0, 40, 200, 20] },
+      { r: [380, 230, 260, 50] }
+    ]
+  },
+  {
+    world: 3,
+    code: '3-5',
+    challenge: true,
+    name: 'Tempesta',
+    hint: 'Solo le raffiche forti portano fin laggiù. Pianta lo Stump sul bordo quando il vento cala, sradicalo quando cresce: puoi ripiantarlo quante volte vuoi.',
+    total: 10,
+    goal: 6,
+    rate: 60,
+    time: 300,
+    entrance: { x: 60, y: 0 },
+    exit: { x: 590, y: 230 },
+    wind: { base: 0.6, gust: 0.9, period: 900 },
+    roles: { stump: 1, parasol: 10 },
+    terrain: [
+      { r: [0, 40, 200, 20] },
+      { r: [360, 230, 280, 50] }
     ]
   },
   {
@@ -247,6 +362,49 @@ window.NAILCAP_LEVELS = [
     bulbs: [{ x: 305, y: 160 }]
   },
   {
+    world: 4,
+    code: '4-4',
+    challenge: true,
+    name: 'Scavare al buio',
+    hint: 'L\'uscita è sotto di te, ma non dappertutto c\'è un pavimento. Esplora con il Glow prima di scavare.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    dark: true,
+    entrance: { x: 60, y: 70 },
+    exit: { x: 520, y: 175 },
+    roles: { glow: 2, rooter: 1 },
+    terrain: [
+      { r: [0, 120, 640, 30] },
+      { r: [300, 175, 340, 105] },
+      { r: [0, 0, 640, 20] }
+    ]
+  },
+  {
+    world: 4,
+    code: '4-5',
+    challenge: true,
+    name: 'Due lampade',
+    hint: 'Due ponti di luce, due lampade, due Glow. Ogni lampada resta accesa 10 secondi: dividi bene la luce nel tempo.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    dark: true,
+    entrance: { x: 50, y: 150 },
+    exit: { x: 600, y: 200 },
+    roles: { glow: 2 },
+    terrain: [
+      { r: [0, 200, 200, 80] },
+      { r: [280, 200, 120, 80] },
+      { r: [480, 200, 160, 80] },
+      { r: [0, 0, 640, 30] }
+    ],
+    shelves: [[200, 200, 80, 4], [400, 200, 80, 4]],
+    bulbs: [{ x: 180, y: 200 }, { x: 380, y: 200 }]
+  },
+  {
     world: 5,
     code: '5-1',
     name: 'Il trampolino',
@@ -299,5 +457,45 @@ window.NAILCAP_LEVELS = [
       { r: [0, 150, 250, 20] },
       { r: [290, 150, 350, 20] }
     ]
+  },
+  {
+    world: 5,
+    code: '5-4',
+    challenge: true,
+    name: 'Salto e ponte',
+    hint: 'Prima un muro, poi un fosso. Il trampolino e la rampa vanno piantati nel punto giusto.',
+    total: 10,
+    goal: 8,
+    rate: 80,
+    time: 240,
+    entrance: { x: 60, y: 150 },
+    exit: { x: 600, y: 200 },
+    roles: { sprout: 1, stretch: 2 },
+    terrain: [
+      { r: [0, 200, 380, 80] },
+      { r: [200, 164, 12, 36] },
+      { r: [404, 200, 236, 80] }
+    ]
+  },
+  {
+    world: 5,
+    code: '5-5',
+    challenge: true,
+    name: 'Notte nel micelio',
+    hint: 'Il gran finale, al buio. Accendi la lampada prima del salto: oltre il baratro c\'è un ponte di luce. Poi torna indietro dal micelio.',
+    total: 10,
+    goal: 5,
+    rate: 80,
+    time: 300,
+    dark: true,
+    entrance: { x: 60, y: 100 },
+    exit: { x: 20, y: 150 },
+    roles: { glow: 2, sprout: 1, mycelink: 2 },
+    terrain: [
+      { r: [0, 150, 250, 20] },
+      { r: [370, 150, 270, 20] }
+    ],
+    shelves: [[290, 150, 80, 4]],
+    bulbs: [{ x: 238, y: 150 }]
   }
 ];

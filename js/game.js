@@ -138,8 +138,16 @@
     merge: mergeProgress
   };
 
+  // un livello si apre superando il precedente; quelli già superati restano sempre aperti
+  // (così l'aggiunta di livelli nuovi non blocca i progressi di chi è già avanti)
   function isUnlocked(i) {
-    return i === 0 || !!progress.done[LEVELS[i - 1].code];
+    const l = LEVELS[i];
+    if (i === 0 || progress.done[l.code]) return true;
+    const prev = LEVELS[i - 1];
+    if (prev.world === l.world) return !!progress.done[prev.code];
+    // primo livello di un mondo: basta il percorso principale del mondo precedente, le sfide sono facoltative
+    const main = LEVELS.filter((x) => x.world === prev.world && !x.challenge);
+    return !!progress.done[main[main.length - 1].code];
   }
 
   // ---------- Terreno ----------
@@ -1612,6 +1620,7 @@
     ).join('');
     openOverlay(
       '<h2>' + esc(l.code + ' · ' + l.name) + '</h2>' +
+      (l.challenge ? '<p><strong style="color:#FF7AC6">Sfida</strong> · livello facoltativo, più difficile: non serve per aprire il mondo successivo.</p>' : '') +
       fresh +
       '<p>' + esc(l.hint) + '</p>' +
       rolesChips(l) +
@@ -1649,9 +1658,10 @@
         const done = !!progress.done[l.code];
         const best = progress.best[l.code];
         const status = done ? 'Completato' + (best ? ' · ' + best + '/' + l.total : '') : unlocked ? 'Da giocare' : 'Bloccato';
+        const tag = l.challenge ? 'Sfida · ' : '';
         return '<button class="level' + (done ? ' done' : '') + '" data-i="' + i + '"' + (unlocked ? '' : ' disabled') + '>' +
           '<strong>' + esc(l.code) + '</strong> ' + esc(l.name) +
-          '<small>' + status + '</small></button>';
+          '<small>' + tag + status + '</small></button>';
       }).join('');
       html += '<h3 class="world">Mondo ' + w.id + ' · ' + esc(w.name) + '</h3><div class="levels">' + items + '</div>';
     }
@@ -1695,7 +1705,9 @@
   let titleRaf = 0;
   let titleLast = 0;
 
+  // prima il percorso principale, poi le sfide rimaste
   function firstOpenLevel() {
+    for (let i = 0; i < LEVELS.length; i++) if (!LEVELS[i].challenge && !progress.done[LEVELS[i].code] && isUnlocked(i)) return i;
     for (let i = 0; i < LEVELS.length; i++) if (!progress.done[LEVELS[i].code] && isUnlocked(i)) return i;
     return -1;
   }

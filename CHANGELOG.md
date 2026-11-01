@@ -2,6 +2,14 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.0.11.0 — 2026-11-01
+- 10 livelli nuovi: ogni mondo ha ora 5 livelli, 25 in tutto
+- I livelli 4 e 5 di ogni mondo sono Sfide facoltative: più difficili, mescolano ruoli di mondi diversi e non servono per aprire il mondo successivo
+- Mondo 1: Scava e plana, Dietro front · Mondo 2: Scala e ponte, Tre gradini · Mondo 3: Planata, Tempesta
+- Mondo 4: Scavare al buio, Due lampade · Mondo 5: Salto e ponte, Notte nel micelio
+- I livelli già superati restano sempre aperti, anche dopo l'aggiunta di livelli nuovi
+- Continua propone prima il percorso principale, poi le sfide
+
 ## V.0.10.0 — 2026-11-01
 - Sonoro: effetti per ogni evento, sintetizzati in tempo reale e posizionati a destra o a sinistra come sullo schermo
 - Ogni ruolo ha la sua nota; i salvataggi salgono di nota a ogni Nailcap salvato
