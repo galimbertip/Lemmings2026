@@ -2,6 +2,13 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.1.0.0 — 2026-11-01
+- Prima versione completa: 5 mondi, 25 livelli (15 del percorso principale e 10 sfide), 10 ruoli
+- Si gioca anche senza rete: dopo la prima apertura il gioco resta disponibile offline
+- Installabile sulla schermata Home di Android e iPhone, con le icone dedicate
+- Finale: un messaggio quando completi il percorso principale e uno quando superi tutti i 25 livelli
+- Dopo l'ultimo livello si torna alla schermata iniziale
+
 ## V.0.11.0 — 2026-11-01
 - 10 livelli nuovi: ogni mondo ha ora 5 livelli, 25 in tutto
 - I livelli 4 e 5 di ogni mondo sono Sfide facoltative: più difficili, mescolano ruoli di mondi diversi e non servono per aprire il mondo successivo

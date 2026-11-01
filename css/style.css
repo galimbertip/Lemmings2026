@@ -366,6 +366,15 @@ button { font-family: inherit; color: inherit; }
   .rotate { display: flex; }
 }
 
+.finale {
+  margin: -4px 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FF7AC6;
+  background: #2A1424;
+}
+.finale h2 { color: #FFD1EA; margin-bottom: 4px; }
+.finale p { color: #F3D6E6; margin: 0; }
 .sync { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-2); }
 .sync[hidden] { display: none; }
 .sync p { margin: 0 0 10px; }

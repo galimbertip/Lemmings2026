@@ -5,7 +5,9 @@ Non controlli i Nailcap direttamente: assegni loro dei ruoli e li guidi fino all
 
 **Gioca:** https://galimbertip.github.io/Lemmings2026/
 
-Versione attuale e changelog: pulsante della versione in alto a destra nel gioco, oppure [CHANGELOG.md](CHANGELOG.md).
+Versione attuale: **V.1.0.0** — changelog dal pulsante della versione in alto a destra nel gioco, oppure [CHANGELOG.md](CHANGELOG.md).
+
+Si gioca nel browser di telefono, tablet e PC; si può installare sulla schermata Home e, dopo la prima apertura, funziona anche offline.
 
 ## La creatura
 
@@ -76,7 +78,9 @@ js/game.js          motore: terreno, Nailcap, ruoli, riavvolgimento, disegno, in
 js/firebase-config.js  configurazione Firebase (null = sincronizzazione spenta)
 js/sync.js          accesso Google e sincronizzazione dei progressi su Firestore
 js/audio.js         effetti, musica generativa e vento, sintetizzati con la Web Audio API
-icons/              icona dell'app e logo GPverse della schermata iniziale
+icons/              icone dell'app (svg, png, maskable, Apple) e logo GPverse
+sw.js               service worker: gioco disponibile offline
+manifest.webmanifest  installazione come app (orizzontale, schermo intero)
 ```
 
 Nessuna build: è un sito statico servito da GitHub Pages. Il sonoro non usa file audio: è tutto generato nel browser. L'unica dipendenza esterna è l'SDK Firebase, caricato solo se la sincronizzazione è configurata.
@@ -100,5 +104,5 @@ service cloud.firestore {
 
 ## Versioni
 
-Formato **V.maior.minor.patch**. A ogni rilascio aggiornare `js/version.js` e `CHANGELOG.md`.
-La **V.1.0.0** arriverà con un gioco completo dall'inizio alla fine.
+Formato **V.maior.minor.patch**. A ogni rilascio aggiornare `js/version.js` e `CHANGELOG.md`; per una versione maior o minor aggiornare anche il nome della cache in `sw.js`.
+La **V.1.0.0** è la prima versione completa dall'inizio alla fine.

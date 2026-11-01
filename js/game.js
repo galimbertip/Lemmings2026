@@ -908,12 +908,17 @@
     const ok = state.saved >= state.level.goal;
     const code = state.level.code;
     const improved = ok && (!progress.done[code] || state.saved > (progress.best[code] || 0));
+    const mainBefore = allDone(true);
+    const allBefore = allDone(false);
     if (improved) {
       progress.done[code] = true;
       progress.best[code] = Math.max(progress.best[code] || 0, state.saved);
       saveProgress();
     }
+    // il finale: la prima volta che si completa il percorso principale, e la prima volta che si completa tutto
+    state.finale = !allBefore && allDone(false) ? 'all' : !mainBefore && allDone(true) ? 'main' : null;
     sfx(ok ? 'win' : 'lose');
+    if (state.finale) sfx('bloom');
     showResult(ok);
   }
 
@@ -1631,10 +1636,28 @@
     bind('ov-levels', showLevels);
   }
 
+  function allDone(mainOnly) {
+    return LEVELS.every((l) => (mainOnly && l.challenge) || progress.done[l.code]);
+  }
+
+  function finaleHtml() {
+    if (state.finale === 'all') {
+      return '<div class="finale"><h2>Nailcap completato al 100%!</h2>' +
+        '<p>Hai superato tutti i ' + LEVELS.length + ' livelli, sfide comprese. Tutti i Nailcap del sottobosco sono a casa: grazie per aver giocato!</p></div>';
+    }
+    if (state.finale === 'main') {
+      const left = LEVELS.filter((l) => l.challenge && !progress.done[l.code]).length;
+      return '<div class="finale"><h2>Hai completato Nailcap!</h2>' +
+        '<p>Tutti i mondi sono superati. ' + (left ? 'Restano ' + left + ' sfide da scoprire nel menu Livelli.' : 'Hai già superato anche tutte le sfide.') + '</p></div>';
+    }
+    return '';
+  }
+
   function showResult(ok) {
     const l = state.level;
     const hasNext = state.index + 1 < LEVELS.length;
     openOverlay(
+      (ok ? finaleHtml() : '') +
       '<h2>' + (ok ? 'Livello superato!' : 'Non ce l\'hanno fatta') + '</h2>' +
       '<p>Salvati <strong>' + state.saved + '</strong> su ' + l.total + ' (obiettivo ' + l.goal + ').</p>' +
       (ok ? '' : '<p>Riavvolgi il tempo e cambia solo la mossa sbagliata.</p>') +
@@ -1642,9 +1665,12 @@
       (ok && hasNext ? '<button class="btn primary" id="ov-next">Prossimo livello</button>' : '') +
       '<button class="btn' + (ok ? '' : ' primary') + '" id="ov-rewind">Riavvolgi 10 s</button>' +
       '<button class="btn" id="ov-retry">Ricomincia</button>' +
-      '<button class="btn" id="ov-levels">Livelli</button></div>'
+      '<button class="btn" id="ov-levels">Livelli</button>' +
+      (ok && !hasNext ? '<button class="btn" id="ov-title">Schermata iniziale</button>' : '') +
+      '</div>'
     );
     bind('ov-next', () => loadLevel(state.index + 1));
+    bind('ov-title', showTitle);
     bind('ov-rewind', () => rewindBy(600));
     bind('ov-retry', () => loadLevel(state.index));
     bind('ov-levels', showLevels);
