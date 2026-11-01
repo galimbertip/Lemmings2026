@@ -376,6 +376,7 @@
     buildMask(level);
     paintTerrain();
     buildBackground(index * 7919 + 17);
+    if (window.NailcapAudio) window.NailcapAudio.setTheme('w' + level.world);
     progress.last = index;
     saveLocal();
     state = {
@@ -459,6 +460,7 @@
     s.silent = true;
     while (s.tick < target && !s.over) step();
     s.silent = false;
+    sfx('rewind');
     renderRoles();
     if (s.over) showResult(s.saved >= s.level.goal);
     else closeOverlay();
@@ -476,10 +478,18 @@
     return { x, y, dir, mode: 'fall', fall: 0, sub: 0, t: 0, parasol: false, clinger: false, glow: false, bricks: 0, wx: 0, linkCd: 0 };
   }
 
+  // Suoni (js/audio.js): mai durante la risimulazione silenziosa del riavvolgimento
+  function sfx(name, o) {
+    if (state && state.silent) return;
+    const a = window.NailcapAudio;
+    if (a) a.play(name, o);
+  }
+
   function spawn() {
     const e = state.level.entrance;
     state.caps.push(newCap(e.x, e.y, 1));
     state.released++;
+    sfx('spawn', { x: e.x });
   }
 
   // ---------- Spore ----------
@@ -489,6 +499,7 @@
     c.dead = true;
     state.spores.push({ x: c.x, y: c.y - 8, vx: 0, vy: -1.1, root: 0, dir: c.dir });
     burst(c.x, c.y - 6, SPORE_COLOR, 18);
+    sfx('puff', { x: c.x });
   }
 
   function updateSpores() {
@@ -502,6 +513,7 @@
           s.caps.push(newCap(Math.round(p.x), Math.round(p.y), p.dir));
           s.spores.splice(i, 1);
           burst(p.x, p.y - 6, '#9FF6FA', 8);
+          sfx('germinate', { x: p.x });
         }
         continue;
       }
@@ -529,6 +541,7 @@
   function die(c, quiet) {
     c.dead = true;
     if (!quiet) burst(c.x, c.y - 5, BASE_CAP, 14);
+    sfx(quiet ? 'fallout' : 'death', { x: c.x });
   }
 
   function blockedByStump(c) {
@@ -554,6 +567,7 @@
         c.mode = 'jump';
         c.jx = c.x; c.jy = c.y; c.vx = JUMP_VX * c.dir; c.vy = JUMP_VY; c.peak = c.y;
         o.bounce = state.tick;
+        sfx('boing', { x: c.x });
         burst(o.x, o.y - 12, SPROUT_COLOR, 6);
         return true;
       }
@@ -563,6 +577,7 @@
         burst(c.x, c.y - 6, LINK_COLOR, 10);
         c.x = p.x; c.y = p.y;
         c.linkCd = LINK_COOLDOWN;
+        sfx('link', { x: c.x });
         burst(c.x, c.y - 6, LINK_COLOR, 10);
         return true;
       }
@@ -578,6 +593,7 @@
       c.saved = true;
       state.saved++;
       burst(c.x, c.y - 8, '#9FF6FA', 10);
+      sfx('saved', { x: c.x, n: state.saved });
       return;
     }
 
@@ -694,6 +710,8 @@
       }
 
       case 'sprout':
+        if (c.t === SPROUT_GROW) sfx('grow', { x: c.x });
+        return;
       case 'link':
         return;
 
@@ -708,7 +726,7 @@
         if (c.y >= H - 3) { c.mode = 'walk'; return; }
         carve(c.x - 4, c.y, 9, 2);
         c.y += 1;
-        if (c.t % 15 === 0) dust(c.x, c.y, ROLE_DEFS.rooter.color);
+        if (c.t % 15 === 0) { dust(c.x, c.y, ROLE_DEFS.rooter.color); sfx('dig', { x: c.x }); }
         return;
       }
 
@@ -724,7 +742,7 @@
         if (!hit && c.t > 12) { c.mode = 'walk'; return; }
         if (hit) {
           carve(c.dir > 0 ? c.x + 1 : c.x - 3, c.y - 10, 3, 11);
-          if (c.t % 9 === 0) dust(c.x + c.dir * 4, c.y - 5, ROLE_DEFS.ram.color);
+          if (c.t % 9 === 0) { dust(c.x + c.dir * 4, c.y - 5, ROLE_DEFS.ram.color); sfx('bash', { x: c.x }); }
         }
         const nx = c.x + c.dir;
         if (nx > 0 && nx < W - 1) c.x = nx; else c.mode = 'walk';
@@ -747,6 +765,7 @@
           return;
         }
         fillBrick(c.dir > 0 ? c.x : c.x - 5, c.y, 6);
+        sfx('brick', { x: c.x, n: STRETCH_BRICKS - c.bricks });
         c.y -= 1;
         c.x += 3 * c.dir;
         if (--c.bricks <= 0) c.mode = 'walk';
@@ -802,6 +821,7 @@
       c.sub = 0;
       state.roles.stump++;
       burst(c.x, c.y - 10, ROLE_DEFS.stump.color, 6);
+      sfx('unstump', { x: c.x });
       return true;
     }
     if ((state.roles[role] || 0) <= 0) return false;
@@ -821,6 +841,8 @@
     }
     state.roles[role]--;
     burst(c.x, c.y - 10, ROLE_DEFS[role].color, 6);
+    sfx('role', { role, x: c.x });
+    if (role === 'puff') sfx('fuse', { x: c.x });
     return true;
   }
 
@@ -843,7 +865,7 @@
         if (c.dead || c.saved || !c.glow) continue;
         const dx = c.x - b.x, dy = c.y - b.y;
         if (dx * dx + dy * dy <= BULB_IGNITE * BULB_IGNITE) {
-          if (b.t === 0) burst(b.x, b.y - 10, GLOW_COLOR, 10);
+          if (b.t === 0) { burst(b.x, b.y - 10, GLOW_COLOR, 10); sfx('bulb', { x: b.x }); }
           b.t = BULB_TIME;
           break;
         }
@@ -853,6 +875,7 @@
 
     s.tick++;
     if (s.bloomAt && s.tick >= s.bloomAt) bloomNow();
+    else if (s.bloomAt && (s.bloomAt - s.tick) % 60 === 0) sfx('beep', { n: (s.bloomAt - s.tick) / 60 });
     if (!s.bloomAt && s.released < s.level.total && s.tick >= s.nextSpawn) {
       spawn();
       s.nextSpawn = s.tick + s.level.rate;
@@ -882,6 +905,7 @@
       progress.best[code] = Math.max(progress.best[code] || 0, state.saved);
       saveProgress();
     }
+    sfx(ok ? 'win' : 'lose');
     showResult(ok);
   }
 
@@ -893,6 +917,7 @@
     const s = state;
     if (s.bloomAt) return false;
     s.bloomAt = s.tick + BLOOM_TIME;
+    sfx('beep', { n: 5 });
     return true;
   }
 
@@ -906,6 +931,7 @@
     }
     for (const p of s.spores) burst(p.x, p.y, SPORE_COLOR, 6);
     s.spores = [];
+    sfx('bloom');
     // chi non è ancora uscito dal baccello non uscirà più
     s.released = s.level.total;
   }
@@ -1497,6 +1523,7 @@
       b.innerHTML = roleIcon(def.color) + '<span class="name">' + def.name + '</span><span class="count">' + n + '</span>';
       b.addEventListener('click', () => {
         selectedRole = id;
+        sfx('select');
         setRolesOpen(false);
         renderRoles();
       });
@@ -1697,6 +1724,7 @@
     updatePauseUi();
     refreshTitle();
     titleEl.hidden = false;
+    if (window.NailcapAudio) window.NailcapAudio.setTheme('title');
     resizeTitle();
     if (!titleRaf) { titleLast = performance.now(); titleRaf = requestAnimationFrame(titleFrame); }
   }
@@ -1885,6 +1913,14 @@
     }
     draw();
     updateHud();
+    const au = window.NailcapAudio;
+    if (au && state) {
+      // musica più bassa in pausa e con le finestre aperte; vento solo mentre si gioca
+      au.setDuck(paused || !overlay.hidden);
+      au.setWind(running && state.level.wind ? Math.abs(windAt(state.level, state.tick)) : 0);
+      if (!titleEl.hidden) au.setTheme('title');
+      else au.setTheme('w' + state.level.world);
+    }
     requestAnimationFrame(frame);
   }
 

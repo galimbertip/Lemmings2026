@@ -29,7 +29,10 @@
         <span id="wind-force">0</span>
       </span>
     </div>
-    <button id="version-btn" class="pill" aria-label="Versione, apri il changelog"></button>
+    <div class="tb-right">
+      <button id="btn-sound" class="pill icon-pill" type="button" aria-label="Audio"></button>
+      <button id="version-btn" class="pill" aria-label="Versione, apri il changelog"></button>
+    </div>
   </header>
 
   <main id="playfield">
@@ -99,6 +102,7 @@
       <button id="t-news" class="btn big" type="button">Novità</button>
     </div>
   </div>
+  <button id="t-sound" class="btn sound-btn" type="button" aria-label="Audio"></button>
   <span class="title-progress" id="t-progress"></span>
   <span class="title-ver" id="t-ver"></span>
 </div>
@@ -120,6 +124,7 @@
 <script src="js/levels.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/game.js"></script>
+<script src="js/audio.js"></script>
 <script type="module" src="js/sync.js"></script>
 </body>
 </html>
