@@ -3,7 +3,7 @@
 // - file del gioco: prima la rete (così gli aggiornamenti arrivano subito), se manca o è lenta si usa la copia salvata
 // - font e SDK Firebase: prima la copia salvata, aggiornata in background
 // - accesso Google e database Firestore non passano mai dalla cache
-const CACHE = 'nailcap-v1.0.0';
+const CACHE = 'nailcap-v1.0.1';
 const CORE = [
   './',
   'index.html',

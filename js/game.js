@@ -130,6 +130,7 @@
     if (changed) {
       saveLocal();
       if (overlayKind === 'levels') showLevels();
+      try { if (!titleEl.hidden) refreshTitle(); } catch (e) { /* schermata iniziale non ancora pronta */ }
     }
     return changed;
   }
@@ -1763,6 +1764,7 @@
     refreshTitle();
     titleEl.hidden = false;
     if (window.NailcapAudio) window.NailcapAudio.setTheme('title');
+    try { window.dispatchEvent(new Event('nailcap:title-open')); } catch (e) { /* ignora */ }
     resizeTitle();
     if (!titleRaf) { titleLast = performance.now(); titleRaf = requestAnimationFrame(titleFrame); }
   }

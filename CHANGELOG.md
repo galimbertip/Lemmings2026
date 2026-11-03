@@ -2,6 +2,14 @@
 
 Formato delle versioni: **V.maior.minor.patch**.
 
+## V.1.0.1 — 2026-11-03
+- Nuova Verifica della sincronizzazione nel menu Livelli: controlla passo per passo connessione, accesso Google, lettura e scrittura del database, e spiega cosa sistemare in Firebase
+- Pulsante Copia la verifica per mandare il risultato a chi ti aiuta
+- Sincronizza ora e il numero di livelli salvati online e sul dispositivo
+- Nella schermata iniziale si vede se il Cloud è collegato
+- Accesso Google più affidabile: niente più ripiego sul reindirizzamento, che sui siti GitHub Pages i browser moderni bloccano
+- Messaggi di errore della sincronizzazione in italiano, con l'indicazione del passaggio da fare
+
 ## V.1.0.0 — 2026-11-01
 - Prima versione completa: 5 mondi, 25 livelli (15 del percorso principale e 10 sfide), 10 ruoli
 - Si gioca anche senza rete: dopo la prima apertura il gioco resta disponibile offline

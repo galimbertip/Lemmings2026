@@ -380,6 +380,18 @@ button { font-family: inherit; color: inherit; }
 .sync p { margin: 0 0 10px; }
 .sync p strong { color: var(--text); }
 .sync .sync-status { font-size: 13px; margin-top: 8px; }
+.sync-title { margin: 0 0 6px; font-size: 15px; color: var(--text); }
+.diag { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.diag li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
+.diag .dmark { width: 18px; flex-shrink: 0; text-align: center; font-weight: 700; }
+.diag li.ok .dmark { color: #7CF29A; }
+.diag li.ko .dmark { color: #FF7A7A; }
+.diag li.ko strong { color: #FFB3B3; }
+.diag li strong { color: var(--text); }
+.t-sync { margin-left: 6px; opacity: .85; }
+.t-sync::before { content: '·'; margin-right: 6px; }
+.t-sync:empty { display: none; }
+.t-sync.on { color: var(--accent-soft); }
 .world { margin: 14px 0 8px; font-size: 15px; color: var(--muted); font-weight: 600; }
 .world:first-of-type { margin-top: 4px; }
 

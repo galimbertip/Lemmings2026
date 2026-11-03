@@ -5,7 +5,7 @@ Non controlli i Nailcap direttamente: assegni loro dei ruoli e li guidi fino all
 
 **Gioca:** https://galimbertip.github.io/Lemmings2026/
 
-Versione attuale: **V.1.0.0** — changelog dal pulsante della versione in alto a destra nel gioco, oppure [CHANGELOG.md](CHANGELOG.md).
+Versione attuale: **V.1.0.1** — changelog dal pulsante della versione in alto a destra nel gioco, oppure [CHANGELOG.md](CHANGELOG.md).
 
 Si gioca nel browser di telefono, tablet e PC; si può installare sulla schermata Home e, dopo la prima apertura, funziona anche offline.
 
@@ -89,6 +89,7 @@ Nessuna build: è un sito statico servito da GitHub Pages. Il sonoro non usa fil
 
 Con l'accesso Google i progressi vengono salvati su Firestore nel documento `nailcap/{uid}`.
 L'unione tiene sempre il meglio: un livello superato su un dispositivo risulta superato ovunque, e per ogni livello vale il record più alto.
+Se qualcosa non va, nel menu **Livelli** il pulsante **Verifica** controlla ogni passaggio e indica cosa sistemare.
 Regole Firestore richieste:
 
 ```
